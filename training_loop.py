@@ -59,22 +59,20 @@ def run_epoch(
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
         
         losses[ind] = loss.item()
-        edit_distance_ratios[ind] = ratio(greedy_transcript, actual_transcript)
-        greedy_transcripts.append(greedy_transcript)
+        
+        if ind % 100 == 0:
+            greedy_result = decoder(model_output)
+            greedy_transcript = " ".join(greedy_result)
+            actual_transcript = get_actual_transcript(y[ind])
+            edit_distance_ratios.append(ratio(greedy_transcript, actual_transcript))
+            greedy_transcripts.append(greedy_transcript)
 
         if display:
             if ind % display_iterations == 0 and ind > 0:
-
-                greedy_result = decoder(model_output)
-                greedy_transcript = " ".join(greedy_result)
-                actual_transcript = get_actual_transcript(y[ind])
-                edit_distance_ratio = ratio(greedy_transcript, actual_transcript)
-
                 print(f"\nLoss is {loss.item()}")
-                print(f"Ratio is {edit_distance_ratio}\n")
+                print(f"Ratio is {np.mean(edit_distance_ratios)}\n")
         
     return {
         "model": model,
@@ -102,7 +100,7 @@ def main(
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
     X_train, X_val, y_train, y_val = train_test_split(
-        X_train, y_train, test_size=0.25, random_state=1) 
+        X_train, y_train, test_size=0.1, random_state=1) 
     torch.autograd.set_detect_anomaly(True)
 
     hidden_size = 256
@@ -163,12 +161,12 @@ def main(
 
 
         with open(file_write_path, 'a') as f:
-            f.write(f"\nEpoch {epoch} Training loss {np.mean(training_losses)}"
+            f.write(f"\nEpoch {epoch}\n Training loss {np.mean(training_losses)}\n"
                     f"Validation loss {np.mean(validation_losses)}")
-            f.write(f"\n Edit distance ratio: Training {np.mean(training_ratios)}"
+            f.write(f"\nEdit distance ratio: Training {np.mean(training_ratios)}\n"
                     f"Validation {np.mean(validation_ratios)}")
-            f.write(f"Transcripts: {random.sample(training_greedy_transcripts, 1)}"
-                    f"{random.sample(validation_greedy_transcripts, 1)}\n")
+            f.write(f"Transcripts: \n{random.sample(training_greedy_transcripts, 2)}\n"
+                    f"{random.sample(validation_greedy_transcripts, 2)}\n")
         
         if epoch % model_save_epochs == 0 and epoch > 0:
             if model_save_path:
@@ -185,12 +183,14 @@ def main(
     
     test_losses = validate_dict['losses']
     test_ratios = validate_dict['edit_distance_ratios']
+    test_greedy_transcripts = train_dict['greedy_transcripts']
     print(f"\nTest Loop\n Mean Loss {np.mean(test_losses)}\n"
           f"Mean ratio {np.mean(test_ratios)}\n")
 
     with open(file_write_path, 'a') as f:
-        f.write(f"\nTest loss {np.mean(test_losses)} Test ratio"
-                f"{np.mean(test_ratios)}")
+        f.write(f"\nTest loss {np.mean(test_losses)}\n Test ratio"
+                f" {np.mean(test_ratios)}\nTest transcripts :\n"
+                f"{random.sample(validation_greedy_transcripts, 2)}")
 
     if model_save_path:
         torch.save({
