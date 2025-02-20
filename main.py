@@ -2,6 +2,7 @@
 import argparse
 import os 
 from datetime import datetime
+from model_config import ModelConfig
 
 
 parser = argparse.ArgumentParser(

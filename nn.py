@@ -44,10 +44,10 @@ class RNNLayers(nn.Module):
 
 class MotifCaller(nn.Module):
     """Batch size 1 fixed"""
-    def __init__(self, hidden_size=256, n_layers=3, output_classes=20):
+    def __init__(self, hidden_size=256, n_layers=3, n_classes=20):
         super(MotifCaller, self).__init__()
         self.cnn_layers = ConvolutionalEncoder()
-        self.rnn_layers = RNNLayers(hidden_size=256, num_layers=n_layers, n_classes=output_classes)
+        self.rnn_layers = RNNLayers(hidden_size=256, num_layers=n_layers, n_classes=n_classes)
 
     def forward(self, x):
         x = self.cnn_layers.forward(x)

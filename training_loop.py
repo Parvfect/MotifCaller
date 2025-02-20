@@ -1,6 +1,4 @@
 
-
-# fuck jupyter
 from nn import MotifCaller
 from training_data import (
     load_training_data, data_preproc,
@@ -20,32 +18,20 @@ from utils import get_actual_transcript, get_savepaths
 import numpy as np
 from typing import List, Dict
 import random
+from model_config import ModelConfig
 
-
-n_classes = 10
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-torch.set_default_device(device)
-print(f"Running on {device}")
-
-model = MotifCaller(output_classes=n_classes).to(device)
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
-
-ctc = nn.CTCLoss(blank=0, reduction='mean', zero_infinity=True)
-labels_int = np.arange(n_classes).tolist()
-labels = [f"{i}" for i in labels_int] # Tokens to be fed into greedy decoder
-greedy_decoder = GreedyCTCDecoder(labels=labels)
 
 def run_epoch(
-        model: MotifCaller, X: List[torch.tensor], y: List[List[int]],
-        ctc: CTCLoss, model_save_path: str = "", model_write_path: str = "",
-        save_iterations: int = 1000, train: bool = False, 
+        model: MotifCaller, model_config: ModelConfig, optimizer: torch.optim, decoder: any, 
+        X: List[torch.tensor], y: List[List[int]], ctc: CTCLoss, train: bool = False,
         display: bool = False) -> Dict[str, any]:
 
     n_training_samples = len(X)
     losses = np.zeros(n_training_samples)
-    edit_distance_ratios = np.zeros(n_training_samples)
+    edit_distance_ratios = []
     greedy_transcripts = []
     display_iterations = int(n_training_samples / 2)
+    device = model_config.device
 
     if train:
         model.train()
@@ -60,7 +46,7 @@ def run_epoch(
         model_output = model(input_sequence)
 
         model_output = model_output.view(
-            model_output.shape[0] * model_output.shape[1], n_classes)
+            model_output.shape[0] * model_output.shape[1], model_config.n_classes)
         
         n_timesteps = model_output.shape[0]
         input_lengths = torch.tensor(n_timesteps)
@@ -74,20 +60,21 @@ def run_epoch(
             loss.backward()
             optimizer.step()
 
-        greedy_result = greedy_decoder(model_output)
-        greedy_transcript = " ".join(greedy_result)
-        actual_transcript = get_actual_transcript(y[ind])
-        edit_distance_ratio = ratio(greedy_transcript, actual_transcript)
-
+        
         losses[ind] = loss.item()
         edit_distance_ratios[ind] = ratio(greedy_transcript, actual_transcript)
         greedy_transcripts.append(greedy_transcript)
 
         if display:
             if ind % display_iterations == 0 and ind > 0:
+
+                greedy_result = decoder(model_output)
+                greedy_transcript = " ".join(greedy_result)
+                actual_transcript = get_actual_transcript(y[ind])
+                edit_distance_ratio = ratio(greedy_transcript, actual_transcript)
+
                 print(f"\nLoss is {loss.item()}")
                 print(f"Ratio is {edit_distance_ratio}\n")
-        
         
     return {
         "model": model,
@@ -96,39 +83,60 @@ def run_epoch(
         "greedy_transcripts": greedy_transcripts
     }
         
-        
-if __name__ == "__main__":
+
+def main(
+        epochs: int = 50, sampling_rate: float = 1.0, window_size: int = 1024,
+        window_step: int = 800, n_classes:int = 10, running_on_hpc: bool = False):
     
     dataset_path, model_save_path, file_write_path = get_savepaths(
-        running_on_hpc=True)
-    
-    #df = pd.read_pickle(dataset_path)
+        running_on_hpc=running_on_hpc)
+
     X, y = load_training_data(
-        dataset_path, column_x='Squiggle', column_y='Motifs', sampling_rate=0.1)
+        dataset_path, column_x='Squiggle', column_y='Motifs',
+        sampling_rate=sampling_rate)
 
     X = data_preproc(
-        X=X, window_size=1024, step_size=800, normalize_values=True)
+        X=X, window_size=window_size, step_size=window_step, normalize_values=True)
     y = create_label_for_training(y)
+
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
     X_train, X_val, y_train, y_val = train_test_split(
         X_train, y_train, test_size=0.25, random_state=1) 
     torch.autograd.set_detect_anomaly(True)
 
-    # Model parameters
-    epochs = 35
     hidden_size = 256
     num_layers = 4
     output_size = n_classes
     dropout_rate = 0.2
     saved_model = False
     model_save_epochs = 5
+    n_classes = 10
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    torch.set_default_device(device)
+    print(f"Running on {device}")
+
+    model = MotifCaller(n_classes=n_classes).to(device)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    labels_int = np.arange(n_classes).tolist()
+    labels = [f"{i}" for i in labels_int] # Tokens to be fed into greedy decoder
+    greedy_decoder = GreedyCTCDecoder(labels=labels)
+
+
+    model_config = ModelConfig(
+        n_classes=n_classes, hidden_size=hidden_size, window_size=window_size,
+        window_step=window_step, train_epochs=epochs, device=device,
+        model_save_path = model_save_path, write_path=file_write_path
+    )
+    
+    ctc = nn.CTCLoss(blank=0, reduction='mean', zero_infinity=True)
 
     for epoch in range(epochs):
 
         train_dict = run_epoch(
-            model=model, X=X_train, y=y_train, ctc=ctc,
-            train=True, display=False
+            model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
+            X=X_train, y=y_train, ctc=ctc, train=True, display=False
         )
 
         model = train_dict['model']
@@ -140,8 +148,10 @@ if __name__ == "__main__":
               f"\n Mean ratio {np.mean(training_ratios)}\n")
         print(random.sample(training_greedy_transcripts, 3))
             
-        validate_dict = run_epoch(model=model, X=X_val, y=y_val, ctc=ctc,
-                                    display=False)
+        validate_dict = run_epoch(
+            model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
+            X=X_val, y=y_val, ctc=ctc, display=False
+            )
         
         validation_losses = validate_dict['losses']
         validation_ratios = validate_dict['edit_distance_ratios']
@@ -168,7 +178,11 @@ if __name__ == "__main__":
                 'optimizer_state_dict': optimizer.state_dict(),
                 }, model_save_path)
     
-    test_dict = run_epoch(model=model, X=X_test, y=y_test, ctc=ctc)
+    test_dict = run_epoch(
+        model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
+        X=X_test, y=y_test, ctc=ctc
+        )
+    
     test_losses = validate_dict['losses']
     test_ratios = validate_dict['edit_distance_ratios']
     print(f"\nTest Loop\n Mean Loss {np.mean(test_losses)}\n"
