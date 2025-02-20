@@ -6,22 +6,28 @@ import torch
 import copy
 from typing import List, Tuple
 
-def get_savepaths(running_on_hpc: bool = False) -> Tuple[str, str]:
+
+def get_savepaths(running_on_hpc: bool = False) -> Tuple[str, str, str]:
 
     uid = str(datetime.datetime.now()).replace(' ', '.').replace('-','').replace(':',"")
 
     if running_on_hpc:
         savepath = os.path.join(os.environ['HOME'], os.path.join("training_logs", f"{uid}"))
+        dataset_path = os.path.join(os.environ['HOME'], "synth_dataset_large.pkl")
     else:
         savepath = os.path.join(
             r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\motifcaller\training_logs", f"{uid}")
+        dataset_path = (
+        r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\datasets"
+        r"\synthetic\synth_dataset_large.pkl"
+        )
 
     os.mkdir(savepath)
 
     model_savepath = os.path.join(savepath, "model.pth")
     file_savepath = os.path.join(savepath, "log.txt")
 
-    return model_savepath, file_savepath
+    return dataset_path, model_savepath, file_savepath
 
 def get_actual_transcript(target_sequence: List) -> str:
     """Gets the tensor target sequence and returns the transcript"""

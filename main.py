@@ -1,8 +1,8 @@
-
+# Recreate as the model config file
 import argparse
-import os
-from training_loop_functions import prepare_data_for_training, train_model, test_model, set_variables
+import os 
 from datetime import datetime
+
 
 parser = argparse.ArgumentParser(
                     prog='Motif Caller',

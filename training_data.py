@@ -10,16 +10,16 @@ import os
 import pickle
 
 def load_training_data(
-    dataset_path=None, column_x='Squiggle', column_y='Bases', sample=False, payload=False):
+    dataset_path=None, column_x='Squiggle', column_y='Bases',
+    sampling_rate: float = 1, payload=False):
 
     if not dataset_path:
         dataset_path = os.path.join(os.environ['HOME'], "empirical_train_dataset_v5_payload_seq.pkl")
         
     dataset = pd.read_pickle(dataset_path)
 
-    if sample:
-        n = int(len(dataset) * 0.5)
-        dataset = dataset.sample(n=n, random_state=1)
+    n = int(len(dataset) * sampling_rate)
+    dataset = dataset.sample(n=n, random_state=1)
     
     X = dataset[column_x].to_numpy().tolist()
     y = dataset[column_y].to_numpy()

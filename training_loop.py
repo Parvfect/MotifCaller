@@ -2,7 +2,10 @@
 
 # fuck jupyter
 from nn import MotifCaller
-from training_data import load_training_data, data_preproc, create_label_for_training
+from training_data import (
+    load_training_data, data_preproc,
+    create_label_for_training
+)
 from Levenshtein import ratio
 from sklearn.preprocessing import normalize
 import pandas as pd
@@ -96,16 +99,16 @@ def run_epoch(
         
 if __name__ == "__main__":
     
-    model_save_path, file_write_path = get_savepaths(running_on_hpc=False)
-    dataset_path = r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\datasets\synthetic\working_datasets\unnormalized\short_read.pkl"
-    df = pd.read_pickle(dataset_path)
+    dataset_path, model_save_path, file_write_path = get_savepaths(
+        running_on_hpc=True)
     
+    #df = pd.read_pickle(dataset_path)
     X, y = load_training_data(
-        dataset_path, column_x='squiggle', column_y='motif_seq', sample=True)
+        dataset_path, column_x='Squiggle', column_y='Motifs', sampling_rate=0.1)
 
     X = data_preproc(
         X=X, window_size=1024, step_size=800, normalize_values=True)
-    #y = create_label_for_training(y)
+    y = create_label_for_training(y)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
     X_train, X_val, y_train, y_val = train_test_split(
@@ -116,7 +119,7 @@ if __name__ == "__main__":
     epochs = 35
     hidden_size = 256
     num_layers = 4
-    output_size = n_classes  # Number of output classes
+    output_size = n_classes
     dropout_rate = 0.2
     saved_model = False
     model_save_epochs = 5
@@ -133,9 +136,8 @@ if __name__ == "__main__":
         training_ratios = train_dict['edit_distance_ratios']
         training_greedy_transcripts = train_dict['greedy_transcripts']
 
-        print(
-            f"\nTrain Epoch {epoch}\n Mean Loss {np.mean(
-                training_losses)}\n Mean ratio {np.mean(training_ratios)}\n")
+        print(f"\nTrain Epoch {epoch}\n Mean Loss {np.mean(training_losses)}"
+              f"\n Mean ratio {np.mean(training_ratios)}\n")
         print(random.sample(training_greedy_transcripts, 3))
             
         validate_dict = run_epoch(model=model, X=X_val, y=y_val, ctc=ctc,
@@ -145,19 +147,18 @@ if __name__ == "__main__":
         validation_ratios = validate_dict['edit_distance_ratios']
         validation_greedy_transcripts = train_dict['greedy_transcripts']
 
-        print(f"\nValidation Epoch {epoch}\n Mean Loss {np.mean(
-            validation_losses)}\n Mean ratio {np.mean(validation_ratios)}\n")
+        print(f"\nValidation Epoch {epoch}\n Mean Loss {np.mean(validation_losses)}"
+              f"\n Mean ratio {np.mean(validation_ratios)}\n")
         print(random.sample(validation_greedy_transcripts, 3))
 
 
         with open(file_write_path, 'a') as f:
-            f.write(f"\nEpoch {epoch} Training loss {np.mean(
-                training_losses)} Validation loss {np.mean(validation_losses)}")
-            f.write(f"\n Edit distance ratio: Training {np.mean(
-                training_ratios)} Validation {np.mean(validation_ratios)}")
-            f.write(f"Transcripts: {random.sample(
-                training_greedy_transcripts, 1)} {random.sample(
-                    validation_greedy_transcripts, 1)}\n")
+            f.write(f"\nEpoch {epoch} Training loss {np.mean(training_losses)}"
+                    f"Validation loss {np.mean(validation_losses)}")
+            f.write(f"\n Edit distance ratio: Training {np.mean(training_ratios)}"
+                    f"Validation {np.mean(validation_ratios)}")
+            f.write(f"Transcripts: {random.sample(training_greedy_transcripts, 1)}"
+                    f"{random.sample(validation_greedy_transcripts, 1)}\n")
         
         if epoch % model_save_epochs == 0 and epoch > 0:
             if model_save_path:
@@ -170,11 +171,12 @@ if __name__ == "__main__":
     test_dict = run_epoch(model=model, X=X_test, y=y_test, ctc=ctc)
     test_losses = validate_dict['losses']
     test_ratios = validate_dict['edit_distance_ratios']
-    print(f"\nTest Loop\n Mean Loss {np.mean(
-        test_losses)}\n Mean ratio {np.mean(test_ratios)}\n")
+    print(f"\nTest Loop\n Mean Loss {np.mean(test_losses)}\n"
+          f"Mean ratio {np.mean(test_ratios)}\n")
 
     with open(file_write_path, 'a') as f:
-        f.write(f"\nTest loss {np.mean(test_losses)} Test ratio {np.mean(test_ratios)}")
+        f.write(f"\nTest loss {np.mean(test_losses)} Test ratio"
+                f"{np.mean(test_ratios)}")
 
     if model_save_path:
         torch.save({
