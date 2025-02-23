@@ -40,6 +40,9 @@ def run_epoch(
     
     for ind in tqdm(range(n_training_samples)):
         
+        if train:
+            optimizer.zero_grad()
+
         input_sequence = X[ind].to(device)
         target_sequence = torch.tensor(y[ind]).to(device)
         
@@ -56,7 +59,6 @@ def run_epoch(
             model_output, target_sequence, input_lengths, label_lengths)
         
         if train:
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         

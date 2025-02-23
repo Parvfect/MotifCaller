@@ -11,18 +11,26 @@ parser = argparse.ArgumentParser(
                     epilog='Use parser to set some parameters for training')
 
 
-dataset_path_default = r"C:\Users\Parv\Doc\HelixWorks\Basecalling\cycle_dataset\short_read_dataset.pkl"
+dataset_path_default = (
+    r"C:\Users\Parv\Doc\HelixWorks\Basecalling"
+    "\cycle_dataset\short_read_dataset.pkl"
+)
 
-parser.add_argument('--alpha', type=float, default=0, help='Parameter for ground truth loss')
+parser.add_argument(
+    '--alpha', type=float, default=0, help='Parameter for ground truth loss')
 parser.add_argument('--epochs', type=int, default=50)
 # parser.add_argument('--infere nce', type=bool, default=False)
 parser.add_argument('--dataset_path', type=str)
 parser.add_argument('--sample_data', action='store_true', help="Sample the data")
-parser.add_argument('--cluster', action='store_true', help="Running on the cluster")
-parser.add_argument('--payload_flag', action='store_true', help="Extract payload from dataset")
-parser.add_argument('--unseen_data_flag', action='store_true', help="Test on unseen cycles")
+parser.add_argument(
+    '--cluster', action='store_true', help="Running on the cluster")
+parser.add_argument(
+    '--payload_flag', action='store_true', help="Extract payload from dataset")
+parser.add_argument(
+    '--unseen_data_flag', action='store_true', help="Test on unseen cycles")
 
-parser.set_defaults(sample_data=False, cluster=False, payload_flag=False, unseen_data_flag=False)
+parser.set_defaults(
+    sample_data=False, cluster=False, payload_flag=False, unseen_data_flag=False)
 
 args = parser.parse_args()
 
@@ -39,15 +47,18 @@ if __name__ == '__main__':
         uid = str(datetime.now()).replace(' ', '.').replace('-','').replace(':',"")
         uid += f'-alpha_{alpha}_epochs_{epochs}'
 
-        savepath = os.path.join(os.environ['HOME'], os.path.join("training_logs", f"{uid}"))
+        savepath = os.path.join(
+            os.environ['HOME'], os.path.join("training_logs", f"{uid}"))
         os.mkdir(savepath)
 
         model_save_path = os.path.join(savepath, "model.pth")
         file_write_path = os.path.join(savepath, "log.txt")
-        test_data_path = os.path.join(os.environ['HOME'], "sampled_test_dataset_v4_spacers.pkl")
+        test_data_path = os.path.join(
+            os.environ['HOME'], "sampled_test_dataset_v4_spacers.pkl")
         
         if not dataset_path:
-          dataset_path = os.path.join(os.environ['HOME'], 'empirical_train_dataset_v6.pkl')
+          dataset_path = os.path.join(
+              os.environ['HOME'], 'empirical_train_dataset_v6.pkl')
         
         model_path = ""
         saved_model = False
