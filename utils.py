@@ -22,6 +22,8 @@ def get_savepaths(running_on_hpc: bool = False) -> Tuple[str, str, str]:
         r"\synthetic\synth_dataset_large.pkl"
         )
 
+        dataset_path = r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\datasets\empirical\empirical_train_dataset_v4_spacers.pkl"
+
     os.mkdir(savepath)
 
     model_savepath = os.path.join(savepath, "model.pth")

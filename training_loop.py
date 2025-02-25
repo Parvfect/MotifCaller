@@ -24,7 +24,7 @@ from model_config import ModelConfig
 def run_epoch(
         model: MotifCaller, model_config: ModelConfig, optimizer: torch.optim, decoder: any, 
         X: List[torch.tensor], y: List[List[int]], ctc: CTCLoss, train: bool = False,
-        display: bool = False) -> Dict[str, any]:
+        display: bool = False, windows: bool = True) -> Dict[str, any]:
 
     n_training_samples = len(X)
     losses = np.zeros(n_training_samples)
@@ -43,13 +43,21 @@ def run_epoch(
         if train:
             optimizer.zero_grad()
 
-        input_sequence = X[ind].to(device)
+        if windows:
+            input_sequence = X[ind].to(device)
+        else:
+            input_sequence = torch.tensor(
+                X[ind], dtype=torch.float32)
+            input_sequence = input_sequence.view(1, 1, len(X[ind])).to(device)
+
         target_sequence = torch.tensor(y[ind]).to(device)
+        print(target_sequence)
         
         model_output = model(input_sequence)
 
-        model_output = model_output.view(
-            model_output.shape[0] * model_output.shape[1], model_config.n_classes)
+        if windows:
+            model_output = model_output.view(
+                model_output.shape[0] * model_output.shape[1], model_config.n_classes)
         
         n_timesteps = model_output.shape[0]
         input_lengths = torch.tensor(n_timesteps)
@@ -86,17 +94,20 @@ def run_epoch(
 
 def main(
         epochs: int = 50, sampling_rate: float = 1.0, window_size: int = 1024,
-        window_step: int = 800, n_classes:int = 10, running_on_hpc: bool = False):
+        window_step: int = 800, n_classes:int = 10, running_on_hpc: bool = False,
+        windows: bool = True):
     
     dataset_path, model_save_path, file_write_path = get_savepaths(
         running_on_hpc=running_on_hpc)
 
     X, y = load_training_data(
-        dataset_path, column_x='Squiggle', column_y='Motifs',
+        dataset_path, column_x='squiggle', column_y='Motifs',
         sampling_rate=sampling_rate)
 
-    X = data_preproc(
-        X=X, window_size=window_size, step_size=window_step, normalize_values=True)
+    if windows:
+        X = data_preproc(
+            X=X, window_size=window_size, step_size=window_step, normalize_values=True)
+
     y = create_label_for_training(y)
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -118,7 +129,7 @@ def main(
     print(f"Running on {device}")
 
     model = MotifCaller(n_classes=n_classes).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     labels_int = np.arange(n_classes).tolist()
     labels = [f"{i}" for i in labels_int] # Tokens to be fed into greedy decoder
     greedy_decoder = GreedyCTCDecoder(labels=labels)
@@ -136,7 +147,7 @@ def main(
 
         train_dict = run_epoch(
             model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
-            X=X_train, y=y_train, ctc=ctc, train=True, display=False
+            X=X_train, y=y_train, ctc=ctc, train=True, display=False, windows=windows
         )
 
         model = train_dict['model']
@@ -144,6 +155,7 @@ def main(
         training_ratios = train_dict['edit_distance_ratios']
         training_greedy_transcripts = train_dict['greedy_transcripts']
 
+        
         print(f"\nTrain Epoch {epoch}\n Mean Loss {np.mean(training_losses)}"
               f"\n Mean ratio {np.mean(training_ratios)}\n")
         print(random.sample(training_greedy_transcripts, 3))

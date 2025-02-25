@@ -17,6 +17,7 @@ def load_training_data(
         dataset_path = os.path.join(os.environ['HOME'], "empirical_train_dataset_v5_payload_seq.pkl")
         
     dataset = pd.read_pickle(dataset_path)
+    print(dataset.columns)
 
     n = int(len(dataset) * sampling_rate)
     dataset = dataset.sample(n=n, random_state=1)

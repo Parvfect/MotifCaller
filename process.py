@@ -12,12 +12,17 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('--epochs', type=int, help="Training epochs")
 parser.add_argument('--sampling_rate', type=float, help="Sample the data")
+parser.add_argument(
+    '--no_windows', action='store_true', help="Run model on the whole input sample")
 parser.add_argument('--window_size', type=int, help="Window size for ctc")
 parser.add_argument('--window_step', type=int, help="Step size for window")
-parser.add_argument('--running_on_hpc', action='store_true', help="Flag for running on hpc")
+parser.add_argument(
+    '--running_on_hpc', action='store_true', help="Flag for running on hpc")
+
 
 parser.set_defaults(
-    epochs=50, window_size=1024, window_step=800, sampling_rate=1.0, running_on_hpc=False)
+    epochs=50, window_size=1024, window_step=800, sampling_rate=1.0,
+    running_on_hpc=False, no_windows=False)
 
 args = parser.parse_args()
 
@@ -27,6 +32,7 @@ if __name__ == '__main__':
     window_size = args.window_size
     window_step = args.window_step
     running_on_hpc = args.running_on_hpc
+    windows = not args.no_windows
 
     main(epochs=epochs, sampling_rate=sampling_rate, window_size=window_size,
-        window_step=window_step, running_on_hpc=running_on_hpc)
+        window_step=window_step, running_on_hpc=running_on_hpc, windows=windows)
