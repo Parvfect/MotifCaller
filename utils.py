@@ -13,16 +13,12 @@ def get_savepaths(running_on_hpc: bool = False) -> Tuple[str, str, str]:
 
     if running_on_hpc:
         savepath = os.path.join(os.environ['HOME'], os.path.join("training_logs", f"{uid}"))
-        dataset_path = os.path.join(os.environ['HOME'], "synth_dataset_large.pkl")
+        dataset_path = os.path.join(os.environ['HOME'], "synthetic_post_review.pkl")
     else:
         savepath = os.path.join(
             r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\motifcaller\training_logs", f"{uid}")
-        dataset_path = (
-        r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\datasets"
-        r"\synthetic\synth_dataset_large.pkl"
-        )
 
-        dataset_path = r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\datasets\empirical\empirical_train_dataset_v4_spacers.pkl"
+        dataset_path = r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\motifcaller\data\synthetic\pickled_datasets\25_2_25.pkl"
 
     os.mkdir(savepath)
 

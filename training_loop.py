@@ -51,7 +51,6 @@ def run_epoch(
             input_sequence = input_sequence.view(1, 1, len(X[ind])).to(device)
 
         target_sequence = torch.tensor(y[ind]).to(device)
-        print(target_sequence)
         
         model_output = model(input_sequence)
 
@@ -67,18 +66,23 @@ def run_epoch(
             model_output, target_sequence, input_lengths, label_lengths)
         
         if train:
-            loss.backward()
+            try:
+                loss.backward()
+            except Exception as e:
+                print(f"Exception {e}")
+                print(target_sequence)
+                continue
             optimizer.step()
         
         losses[ind] = loss.item()
         
-        if ind % 100 == 0:
+        if ind % 1000 == 0:
             greedy_result = decoder(model_output)
             greedy_transcript = " ".join(greedy_result)
             actual_transcript = get_actual_transcript(y[ind])
             edit_distance_ratios.append(ratio(greedy_transcript, actual_transcript))
             greedy_transcripts.append(greedy_transcript)
-
+            
         if display:
             if ind % display_iterations == 0 and ind > 0:
                 print(f"\nLoss is {loss.item()}")
@@ -101,7 +105,7 @@ def main(
         running_on_hpc=running_on_hpc)
 
     X, y = load_training_data(
-        dataset_path, column_x='squiggle', column_y='Motifs',
+        dataset_path, column_x='squiggle', column_y='motif_seq',
         sampling_rate=sampling_rate)
 
     if windows:
@@ -130,6 +134,10 @@ def main(
 
     model = MotifCaller(n_classes=n_classes).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+
+
     labels_int = np.arange(n_classes).tolist()
     labels = [f"{i}" for i in labels_int] # Tokens to be fed into greedy decoder
     greedy_decoder = GreedyCTCDecoder(labels=labels)
@@ -158,7 +166,7 @@ def main(
         
         print(f"\nTrain Epoch {epoch}\n Mean Loss {np.mean(training_losses)}"
               f"\n Mean ratio {np.mean(training_ratios)}\n")
-        print(random.sample(training_greedy_transcripts, 3))
+        print(random.sample(training_greedy_transcripts, 1))
             
         validate_dict = run_epoch(
             model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
@@ -169,9 +177,14 @@ def main(
         validation_ratios = validate_dict['edit_distance_ratios']
         validation_greedy_transcripts = train_dict['greedy_transcripts']
 
+        # Schedule learning rate change
+        scheduler.step(np.mean(validation_losses))
+        current_lr = optimizer.param_groups[0]['lr']
+        print(current_lr)
+
         print(f"\nValidation Epoch {epoch}\n Mean Loss {np.mean(validation_losses)}"
               f"\n Mean ratio {np.mean(validation_ratios)}\n")
-        print(random.sample(validation_greedy_transcripts, 3))
+        print(random.sample(validation_greedy_transcripts, 1))
 
 
         with open(file_write_path, 'a') as f:
@@ -179,8 +192,8 @@ def main(
                     f"Validation loss {np.mean(validation_losses)}")
             f.write(f"\nEdit distance ratio: Training {np.mean(training_ratios)}\n"
                     f"Validation {np.mean(validation_ratios)}")
-            f.write(f"Transcripts: \n{random.sample(training_greedy_transcripts, 2)}\n"
-                    f"{random.sample(validation_greedy_transcripts, 2)}\n")
+            f.write(f"Transcripts: \n{random.sample(training_greedy_transcripts, 1)}\n"
+                    f"{random.sample(validation_greedy_transcripts, 1)}\n")
         
         if epoch % model_save_epochs == 0 and epoch > 0:
             if model_save_path:
@@ -204,7 +217,7 @@ def main(
     with open(file_write_path, 'a') as f:
         f.write(f"\nTest loss {np.mean(test_losses)}\n Test ratio"
                 f" {np.mean(test_ratios)}\nTest transcripts :\n"
-                f"{random.sample(validation_greedy_transcripts, 2)}")
+                f"{random.sample(validation_greedy_transcripts, 1)}")
 
     if model_save_path:
         torch.save({
