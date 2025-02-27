@@ -95,9 +95,6 @@ def run_epoch(
             if ind % display_iterations == 0 and ind > 0:
                 print(f"\nLoss is {loss.item()}")
                 print(f"Ratio is {np.mean(edit_distance_ratios)}\n")
-
-        if ind % 20 == 0:
-            print(np.exp(model_output.sum(axis=0).cpu().detach().numpy()))
         
     return {
         "model": model,
