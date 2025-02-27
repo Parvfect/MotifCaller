@@ -16,7 +16,7 @@ def get_api_key(running_on_hpc: bool = False):
 
     with open(api_key_path, 'r') as f:
         api_key = f.readline()
-    return api_key
+    return api_key.strip().replace('\n', '')
 
 def wandb_login(running_on_hpc:bool = False):
     wandb.login(key=get_api_key(running_on_hpc=running_on_hpc))
