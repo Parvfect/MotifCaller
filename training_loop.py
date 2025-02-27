@@ -53,10 +53,13 @@ def run_epoch(
         target_sequence = torch.tensor(y[ind]).to(device)
         
         model_output = model(input_sequence)
-
+        
         if windows:
+            print(model_output.shape)
             model_output = model_output.view(
                 model_output.shape[0] * model_output.shape[1], model_config.n_classes)
+        else:
+            model_output = model_output.view(model_output.shape[1], model_config.n_classes)
         
         n_timesteps = model_output.shape[0]
         input_lengths = torch.tensor(n_timesteps)
@@ -170,7 +173,7 @@ def main(
             
         validate_dict = run_epoch(
             model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
-            X=X_val, y=y_val, ctc=ctc, display=False
+            X=X_val, y=y_val, ctc=ctc, display=False, windows=windows
             )
         
         validation_losses = validate_dict['losses']
@@ -205,7 +208,7 @@ def main(
     
     test_dict = run_epoch(
         model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
-        X=X_test, y=y_test, ctc=ctc
+        X=X_test, y=y_test, ctc=ctc, windows=windows
         )
     
     test_losses = validate_dict['losses']
