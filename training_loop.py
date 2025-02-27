@@ -133,7 +133,7 @@ def main(
     dropout_rate = 0.2
     saved_model = False
     model_save_epochs = 5
-    n_classes = 10
+    n_classes = 17
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.set_default_device(device)
