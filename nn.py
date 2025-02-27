@@ -11,7 +11,7 @@ class ConvolutionalEncoder(nn.Module):
         self.layer_1 = Conv1d(
             in_channels=1, out_channels=4, stride=1, kernel_size=5)
         self.layer_2 = Conv1d(
-            in_channels=4, out_channels=16, stride=2, kernel_size=5)
+            in_channels=4, out_channels=16, stride=1, kernel_size=5)
         self.layer_3 = Conv1d(
             in_channels=16, out_channels=64, stride=2, kernel_size=5)
         self.layer_4 = Conv1d(
@@ -22,7 +22,7 @@ class ConvolutionalEncoder(nn.Module):
         x = F.relu(self.layer_2(x))
         x = F.relu(self.layer_3(x))
         x = F.relu(self.layer_4(x))
-        x = x.permute(0, 2, 1)
+        x = x.permute(2, 0, 1)
         return x
     
 

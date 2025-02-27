@@ -6,3 +6,5 @@
 **/training_logs
 **/env
 **/data
+**/wandb
+wandb_api_key.txt

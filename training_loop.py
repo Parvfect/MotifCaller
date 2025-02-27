@@ -19,6 +19,8 @@ import numpy as np
 from typing import List, Dict
 import random
 from model_config import ModelConfig
+from training_monitoring import wandb_login, start_wandb_run
+import wandb
 
 
 def run_epoch(
@@ -55,11 +57,13 @@ def run_epoch(
         model_output = model(input_sequence)
         
         if windows:
-            print(model_output.shape)
+            #print(model_output.shape)
             model_output = model_output.view(
                 model_output.shape[0] * model_output.shape[1], model_config.n_classes)
+            #print(model_output.shape)
         else:
-            model_output = model_output.view(model_output.shape[1], model_config.n_classes)
+            model_output = model_output.permute(1, 0, 2).view(
+                model_output.shape[0] * model_output.shape[1], model_config.n_classes)
         
         n_timesteps = model_output.shape[0]
         input_lengths = torch.tensor(n_timesteps)
@@ -149,10 +153,20 @@ def main(
     model_config = ModelConfig(
         n_classes=n_classes, hidden_size=hidden_size, window_size=window_size,
         window_step=window_step, train_epochs=epochs, device=device,
-        model_save_path = model_save_path, write_path=file_write_path
+        model_save_path = model_save_path, write_path=file_write_path,
+        dataset='synthetic', windows=windows
     )
     
     ctc = nn.CTCLoss(blank=0, reduction='mean', zero_infinity=True)
+
+    if running_on_hpc:
+        project_name = "motifcaller_hpc_runs"
+    else:
+        project_name = "motifcaller_local_runs"
+
+    # Training monitoring on wandb
+    wandb_login(running_on_hpc=running_on_hpc)
+    start_wandb_run(model_config=model_config, project_name=project_name)
 
     for epoch in range(epochs):
 
@@ -165,7 +179,6 @@ def main(
         training_losses = train_dict['losses']
         training_ratios = train_dict['edit_distance_ratios']
         training_greedy_transcripts = train_dict['greedy_transcripts']
-
         
         print(f"\nTrain Epoch {epoch}\n Mean Loss {np.mean(training_losses)}"
               f"\n Mean ratio {np.mean(training_ratios)}\n")
@@ -179,6 +192,15 @@ def main(
         validation_losses = validate_dict['losses']
         validation_ratios = validate_dict['edit_distance_ratios']
         validation_greedy_transcripts = train_dict['greedy_transcripts']
+
+        metrics = {
+            "train/accuracy": np.mean(training_ratios),
+            "train/loss": np.mean(training_losses),
+            "validation/accuracy": np.mean(validation_ratios),
+            "validation/loss": np.mean(validation_losses)
+        }
+
+        wandb.log(metrics)
 
         # Schedule learning rate change
         scheduler.step(np.mean(validation_losses))
