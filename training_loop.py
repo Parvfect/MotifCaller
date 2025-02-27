@@ -48,6 +48,7 @@ def run_epoch(
         if windows:
             input_sequence = X[ind].to(device)
         else:
+            # Needs to be normalised, explains negative loss for no windows
             input_sequence = torch.tensor(
                 X[ind], dtype=torch.float32)
             input_sequence = input_sequence.view(1, 1, len(X[ind])).to(device)
@@ -94,6 +95,9 @@ def run_epoch(
             if ind % display_iterations == 0 and ind > 0:
                 print(f"\nLoss is {loss.item()}")
                 print(f"Ratio is {np.mean(edit_distance_ratios)}\n")
+
+        if ind % 20 == 0:
+            print(np.exp(model_output.sum(axis=0).cpu().detach().numpy()))
         
     return {
         "model": model,
@@ -112,14 +116,14 @@ def main(
         running_on_hpc=running_on_hpc)
 
     X, y = load_training_data(
-        dataset_path, column_x='squiggle', column_y='motif_seq',
+        dataset_path=dataset_path, column_x='squiggle', column_y='motif_seq',
         sampling_rate=sampling_rate)
 
     if windows:
         X = data_preproc(
             X=X, window_size=window_size, step_size=window_step, normalize_values=True)
 
-    y = create_label_for_training(y)
+    #y = create_label_for_training(y)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
@@ -154,7 +158,7 @@ def main(
         n_classes=n_classes, hidden_size=hidden_size, window_size=window_size,
         window_step=window_step, train_epochs=epochs, device=device,
         model_save_path = model_save_path, write_path=file_write_path,
-        dataset='synthetic', windows=windows
+        dataset='synthetic', windows=windows, sampling_rate=sampling_rate
     )
     
     ctc = nn.CTCLoss(blank=0, reduction='mean', zero_infinity=True)
