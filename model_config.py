@@ -4,7 +4,8 @@ class ModelConfig():
 
     def __init__(
             self, n_classes, hidden_size, window_size, window_step,
-            train_epochs, device, model_save_path, write_path, dataset, windows):
+            train_epochs, device, model_save_path, write_path, dataset, windows,
+            sampling_rate):
         self.n_classes = n_classes
         self.hidden_size = hidden_size
         self.windows = windows
@@ -20,12 +21,14 @@ class ModelConfig():
         self.write_path = write_path
         self.dataset = dataset
         self.windows = windows
+        self.sampling_rate = sampling_rate
+
 
     def __dict__(self):
         return {
             "epochs": self.train_epochs,
             "hidden_size": self.hidden_size,
-
+            "sampling_rate": self.sampling_rate,
             "window_size": self.window_size,
             "window_step": self.window_step,
             "n_classes": self.n_classes,
