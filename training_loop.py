@@ -49,8 +49,10 @@ def run_epoch(
             input_sequence = X[ind].to(device)
         else:
             input_sequence = X[ind]
+
             if normalize:
                 input_sequence = normalize([input_sequence], norm='l1')
+            
             input_sequence = torch.tensor(
                 input_sequence, dtype=torch.float32)
             input_sequence = input_sequence.view(1, 1, len(X[ind])).to(device)
@@ -59,7 +61,7 @@ def run_epoch(
         
         model_output = model(input_sequence)
         
-        model_output = model_output.permute(1, 0, 2).view(
+        model_output = model_output.view(
                 model_output.shape[0] * model_output.shape[1], model_config.n_classes)
         
         n_timesteps = model_output.shape[0]
@@ -136,7 +138,7 @@ def main(
     dropout_rate = 0.2
     saved_model = False
     model_save_epochs = 5
-    lr = 0.0001
+    lr = 0.001
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.set_default_device(device)
