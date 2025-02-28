@@ -26,7 +26,7 @@ import wandb
 def run_epoch(
         model: MotifCaller, model_config: ModelConfig, optimizer: torch.optim, decoder: any, 
         X: List[torch.tensor], y: List[List[int]], ctc: CTCLoss, train: bool = False,
-        display: bool = False, windows: bool = True) -> Dict[str, any]:
+        display: bool = False, windows: bool = True, normalize: bool = False) -> Dict[str, any]:
 
     n_training_samples = len(X)
     losses = np.zeros(n_training_samples)
@@ -49,22 +49,17 @@ def run_epoch(
             input_sequence = X[ind].to(device)
         else:
             input_sequence = X[ind]
-            input_sequence = normalize([input_sequence], norm='l1')
+            if normalize:
+                input_sequence = normalize([input_sequence], norm='l1')
             input_sequence = torch.tensor(
-                X[ind], dtype=torch.float32)
+                input_sequence, dtype=torch.float32)
             input_sequence = input_sequence.view(1, 1, len(X[ind])).to(device)
 
         target_sequence = torch.tensor(y[ind]).to(device)
         
         model_output = model(input_sequence)
         
-        if windows:
-            #print(model_output.shape)
-            model_output = model_output.view(
-                model_output.shape[0] * model_output.shape[1], model_config.n_classes)
-            #print(model_output.shape)
-        else:
-            model_output = model_output.permute(1, 0, 2).view(
+        model_output = model_output.permute(1, 0, 2).view(
                 model_output.shape[0] * model_output.shape[1], model_config.n_classes)
         
         n_timesteps = model_output.shape[0]
@@ -110,7 +105,7 @@ def main(
         window_size: int = 1024, window_step: int = 800,
         running_on_hpc: bool = False, windows: bool = True,
         dataset_path: str = None, hidden_size: int = 256, n_layers: int = 3,
-        dataset: str = ""):
+        dataset: str = "", normalize: bool = False):
     
     if dataset_path:
         _, model_save_path, file_write_path = get_savepaths(
@@ -126,7 +121,8 @@ def main(
 
     if windows:
         X = data_preproc(
-            X=X, window_size=window_size, step_size=window_step, normalize_values=True)
+            X=X, window_size=window_size, step_size=window_step,
+            normalize_values=normalize)
 
     #y = create_label_for_training(y)
 
@@ -180,7 +176,7 @@ def main(
 
         train_dict = run_epoch(
             model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
-            X=X_train, y=y_train, ctc=ctc, train=True, display=False, windows=windows
+            X=X_train, y=y_train, ctc=ctc, train=True, display=False, windows=windows, normalize=normalize
         )
 
         model = train_dict['model']
@@ -194,7 +190,7 @@ def main(
             
         validate_dict = run_epoch(
             model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
-            X=X_val, y=y_val, ctc=ctc, display=False, windows=windows
+            X=X_val, y=y_val, ctc=ctc, display=False, windows=windows, normalize=normalize
             )
         
         validation_losses = validate_dict['losses']
@@ -238,7 +234,7 @@ def main(
     
     test_dict = run_epoch(
         model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
-        X=X_test, y=y_test, ctc=ctc, windows=windows
+        X=X_test, y=y_test, ctc=ctc, windows=windows, normalize=normalize
         )
     
     test_losses = validate_dict['losses']
