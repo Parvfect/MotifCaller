@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 
 class ConvolutionalEncoder(nn.Module):
-    def __init__(self):
+    def __init__(self, hidden_size: int = 256):
         super(ConvolutionalEncoder, self).__init__()
         self.layer_1 = Conv1d(
             in_channels=1, out_channels=4, stride=1, kernel_size=5)
@@ -15,7 +15,7 @@ class ConvolutionalEncoder(nn.Module):
         self.layer_3 = Conv1d(
             in_channels=16, out_channels=64, stride=2, kernel_size=5)
         self.layer_4 = Conv1d(
-            in_channels=64, out_channels=256, stride=2, kernel_size=19)
+            in_channels=64, out_channels=hidden_size, stride=2, kernel_size=19)
 
     def forward(self, x):
         x = F.relu(self.layer_1(x))
@@ -44,17 +44,15 @@ class RNNLayers(nn.Module):
         h0 = torch.zeros(
             self.num_layers * 2, x.size(0), self.hidden_size, device=x.device)
         x, _ = self.bigru(x, h0)
-
         return F.log_softmax(self.output(x), dim=2)
 
 
 class MotifCaller(nn.Module):
-    """Batch size 1 fixed"""
-    def __init__(self, hidden_size=256, n_layers=3, n_classes=20):
+    def __init__(self, hidden_size:int, n_layers:int, n_classes:int):
         super(MotifCaller, self).__init__()
-        self.cnn_layers = ConvolutionalEncoder()
+        self.cnn_layers = ConvolutionalEncoder(hidden_size=hidden_size)
         self.rnn_layers = RNNLayers(
-            hidden_size=256, num_layers=n_layers, n_classes=n_classes)
+            hidden_size=hidden_size, num_layers=n_layers, n_classes=n_classes)
 
     def forward(self, x):
         x = self.cnn_layers.forward(x)

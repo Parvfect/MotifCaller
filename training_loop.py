@@ -48,7 +48,8 @@ def run_epoch(
         if windows:
             input_sequence = X[ind].to(device)
         else:
-            # Needs to be normalised, explains negative loss for no windows
+            input_sequence = X[ind]
+            input_sequence = normalize([input_sequence], norm='l1')
             input_sequence = torch.tensor(
                 X[ind], dtype=torch.float32)
             input_sequence = input_sequence.view(1, 1, len(X[ind])).to(device)
@@ -105,13 +106,20 @@ def run_epoch(
         
 
 def main(
-        epochs: int = 50, sampling_rate: float = 1.0, window_size: int = 1024,
-        window_step: int = 800, n_classes:int = 10, running_on_hpc: bool = False,
-        windows: bool = True):
+        n_classes: int, epochs: int = 50, sampling_rate: float = 1.0,
+        window_size: int = 1024, window_step: int = 800,
+        running_on_hpc: bool = False, windows: bool = True,
+        dataset_path: str = None, hidden_size: int = 256, n_layers: int = 3,
+        dataset: str = ""):
     
-    dataset_path, model_save_path, file_write_path = get_savepaths(
-        running_on_hpc=running_on_hpc)
+    if dataset_path:
+        _, model_save_path, file_write_path = get_savepaths(
+            running_on_hpc=running_on_hpc)
 
+    else:
+        dataset_path, model_save_path, file_write_path = get_savepaths(
+            running_on_hpc=running_on_hpc)
+    
     X, y = load_training_data(
         dataset_path=dataset_path, column_x='squiggle', column_y='motif_seq',
         sampling_rate=sampling_rate)
@@ -128,23 +136,22 @@ def main(
         X_train, y_train, test_size=0.1, random_state=1) 
     torch.autograd.set_detect_anomaly(True)
 
-    hidden_size = 256
-    num_layers = 4
     output_size = n_classes
     dropout_rate = 0.2
     saved_model = False
     model_save_epochs = 5
-    n_classes = 17
+    lr = 0.0001
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.set_default_device(device)
     print(f"Running on {device}")
 
-    model = MotifCaller(n_classes=n_classes).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
-
+    model = MotifCaller(
+        n_classes=n_classes, hidden_size=hidden_size, n_layers=n_layers).to(device)
+    
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, 'min', patience=5, threshold=0.001)
 
     labels_int = np.arange(n_classes).tolist()
     labels = [f"{i}" for i in labels_int] # Tokens to be fed into greedy decoder
@@ -155,7 +162,7 @@ def main(
         n_classes=n_classes, hidden_size=hidden_size, window_size=window_size,
         window_step=window_step, train_epochs=epochs, device=device,
         model_save_path = model_save_path, write_path=file_write_path,
-        dataset='synthetic', windows=windows, sampling_rate=sampling_rate
+        dataset=dataset, windows=windows, sampling_rate=sampling_rate
     )
     
     ctc = nn.CTCLoss(blank=0, reduction='mean', zero_infinity=True)

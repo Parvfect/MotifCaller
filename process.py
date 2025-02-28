@@ -18,11 +18,17 @@ parser.add_argument('--window_size', type=int, help="Window size for ctc")
 parser.add_argument('--window_step', type=int, help="Step size for window")
 parser.add_argument(
     '--running_on_hpc', action='store_true', help="Flag for running on hpc")
+parser.add_argument('--dataset_path', type=str)
+parser.add_argument('--hidden_size', type=int)
+parser.add_argument('--n_classes', type=int)
+parser.add_argument('--dataset', type=str)
 
 
 parser.set_defaults(
     epochs=50, window_size=1024, window_step=800, sampling_rate=1.0,
-    running_on_hpc=False, no_windows=False)
+    running_on_hpc=False, no_windows=False, dataset_path=None, hidden_size=256,
+    n_classes=17, dataset=""
+    )
 
 args = parser.parse_args()
 
@@ -33,6 +39,13 @@ if __name__ == '__main__':
     window_step = args.window_step
     running_on_hpc = args.running_on_hpc
     windows = not args.no_windows
+    dataset_path = args.dataset_path
+    hidden_size = args.hidden_size
+    n_classes = args.n_classes
+    dataset = args.dataset
 
-    main(epochs=epochs, sampling_rate=sampling_rate, window_size=window_size,
-        window_step=window_step, running_on_hpc=running_on_hpc, windows=windows)
+    main(
+    n_classes=n_classes, hidden_size=hidden_size, dataset=dataset,
+    epochs=epochs, sampling_rate=sampling_rate, window_size=window_size,
+    window_step=window_step, running_on_hpc=running_on_hpc, windows=windows,
+    dataset_path=dataset_path)

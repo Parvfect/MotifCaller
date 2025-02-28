@@ -10,7 +10,7 @@ import os
 import pickle
 
 def load_training_data(
-    dataset_path=None, column_x='Squiggle', column_y='Bases',
+    dataset_path=None, column_x='squiggle', column_y='motif_seq',
     sampling_rate: float = 1, payload=False):
 
     if not dataset_path:
@@ -43,7 +43,7 @@ def data_preproc(X, window_size=150, step_size=100, normalize_values=False):
         # Normalize and flatten sequence
 
         if normalize_values:
-            j = normalize([seq]).flatten() # Consider vectorized normalization
+            j = normalize([seq], norm='l1').flatten() # Consider vectorized normalization
         else:
             j = seq
 
