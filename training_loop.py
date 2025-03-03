@@ -1,5 +1,5 @@
 
-from nn import MotifCaller
+from nn import MotifCaller, NaiveCaller
 from training_data import (
     load_training_data, data_preproc,
     create_label_for_training
@@ -26,7 +26,7 @@ import wandb
 def run_epoch(
         model: MotifCaller, model_config: ModelConfig, optimizer: torch.optim, decoder: any, 
         X: List[torch.tensor], y: List[List[int]], ctc: CTCLoss, train: bool = False,
-        display: bool = False, windows: bool = True, normalize: bool = False) -> Dict[str, any]:
+        display: bool = False, windows: bool = True, normalize_flag: bool = False) -> Dict[str, any]:
 
     n_training_samples = len(X)
     losses = np.zeros(n_training_samples)
@@ -45,31 +45,34 @@ def run_epoch(
         if train:
             optimizer.zero_grad()
 
-        if windows:
-            input_sequence = X[ind].to(device)
-        else:
-            input_sequence = X[ind]
+        input_sequence = X[ind]
+        target_sequence = torch.tensor(y[ind]).to(device)
 
-            if normalize:
+        if windows:
+            input_sequence = input_sequence.to(device)
+
+        else:
+            if normalize_flag:
                 input_sequence = normalize([input_sequence], norm='l1')
             
             input_sequence = torch.tensor(
                 input_sequence, dtype=torch.float32)
-            input_sequence = input_sequence.view(1, 1, len(X[ind])).to(device)
+            input_sequence = input_sequence.view(1, 1, len(input_sequence)).to(device)
 
-        target_sequence = torch.tensor(y[ind]).to(device)
-        
         model_output = model(input_sequence)
+        model_output = model_output.permute(1, 0, 2)  # Assuming log probs are computed in network
         
-        model_output = model_output.view(
-                model_output.shape[0] * model_output.shape[1], model_config.n_classes)
-        
+        if windows:
+           model_output = model_output.view(
+               model_output.shape[0] * model_output.shape[1], model_config.n_classes)
+
         n_timesteps = model_output.shape[0]
-        input_lengths = torch.tensor(n_timesteps)
-        label_lengths = torch.tensor(len(target_sequence))
+        input_lengths = torch.tensor([n_timesteps])
+        label_lengths = torch.tensor([len(target_sequence)])
+        #print(n_timesteps/len(target_sequence))
 
         loss = ctc(
-            model_output, target_sequence, input_lengths, label_lengths)
+            log_probs=model_output, targets=target_sequence, input_lengths=input_lengths, target_lengths=label_lengths)
         
         if train:
             try:
@@ -107,7 +110,7 @@ def main(
         window_size: int = 1024, window_step: int = 800,
         running_on_hpc: bool = False, windows: bool = True,
         dataset_path: str = None, hidden_size: int = 256, n_layers: int = 3,
-        dataset: str = "", normalize: bool = False):
+        dataset: str = "", normalize_flag: bool = False):
     
     if dataset_path:
         _, model_save_path, file_write_path = get_savepaths(
@@ -124,7 +127,7 @@ def main(
     if windows:
         X = data_preproc(
             X=X, window_size=window_size, step_size=window_step,
-            normalize_values=normalize)
+            normalize_values=normalize_flag)
 
     #y = create_label_for_training(y)
 
@@ -144,12 +147,15 @@ def main(
     torch.set_default_device(device)
     print(f"Running on {device}")
 
+    """
     model = MotifCaller(
         n_classes=n_classes, hidden_size=hidden_size, n_layers=n_layers).to(device)
+    """
+    model = NaiveCaller(num_classes=n_classes)
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'min', patience=5, threshold=0.001)
+        optimizer, 'min', patience=10, threshold=0.0001)
 
     labels_int = np.arange(n_classes).tolist()
     labels = [f"{i}" for i in labels_int] # Tokens to be fed into greedy decoder
@@ -178,7 +184,7 @@ def main(
 
         train_dict = run_epoch(
             model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
-            X=X_train, y=y_train, ctc=ctc, train=True, display=False, windows=windows, normalize=normalize
+            X=X_train, y=y_train, ctc=ctc, train=True, display=False, windows=windows, normalize_flag=normalize_flag
         )
 
         model = train_dict['model']
@@ -192,7 +198,7 @@ def main(
             
         validate_dict = run_epoch(
             model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
-            X=X_val, y=y_val, ctc=ctc, display=False, windows=windows, normalize=normalize
+            X=X_val, y=y_val, ctc=ctc, display=False, windows=windows, normalize_flag=normalize_flag
             )
         
         validation_losses = validate_dict['losses']
@@ -215,7 +221,7 @@ def main(
 
         print(f"\nValidation Epoch {epoch}\n Mean Loss {np.mean(validation_losses)}"
               f"\n Mean ratio {np.mean(validation_ratios)}\n")
-        print(random.sample(validation_greedy_transcripts, 1))
+        #print(random.sample(validation_greedy_transcripts, 1))
 
 
         with open(file_write_path, 'a') as f:
@@ -236,7 +242,7 @@ def main(
     
     test_dict = run_epoch(
         model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
-        X=X_test, y=y_test, ctc=ctc, windows=windows, normalize=normalize
+        X=X_test, y=y_test, ctc=ctc, windows=windows, normalize_flag=normalize_flag
         )
     
     test_losses = validate_dict['losses']

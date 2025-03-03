@@ -58,3 +58,41 @@ class MotifCaller(nn.Module):
         x = self.cnn_layers.forward(x)
         x = self.rnn_layers.forward(x)
         return x
+
+
+class NaiveCaller(nn.Module):
+    def __init__(self, input_dim=1, conv_out=128, hidden_dim=256, num_layers=3, num_classes=5):
+        super(NaiveCaller, self).__init__()
+
+        # Convolutional feature extractor
+        self.cnn = nn.Sequential(
+            nn.Conv1d(input_dim, 4, kernel_size=5, stride=2, padding=2),  
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=5, stride=4),
+            nn.Conv1d(4, 16, kernel_size=5, stride=2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=5, stride=4),
+            nn.Conv1d(16, conv_out, kernel_size=5, stride=1),
+            nn.ReLU()
+            #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
+        )
+        
+        # BiLSTM for sequential modeling
+        self.lstm = nn.LSTM(conv_out, hidden_dim, num_layers, 
+                            batch_first=True, bidirectional=True)
+        
+        # Linear layer to output base probabilities
+        self.fc = nn.Linear(hidden_dim * 2, num_classes)  # *2 for bidirectional LSTM
+
+    def forward(self, x):
+        """
+        x: (batch, seq_len, input_dim) - typically signal data
+        """
+        #x = x.permute(0, 2, 1)  # Change to (batch, input_dim, seq_len) for Conv1d
+        x = self.cnn(x)  # Apply CNN
+        x = x.permute(0, 2, 1)  # Change back to (batch, seq_len, conv_out) for LSTM
+
+        x, _ = self.lstm(x)  # LSTM processes sequence
+        x = self.fc(x)  # Output shape: (batch, seq_len, num_classes)
+        #return x
+        return F.log_softmax(x, dim=-1)

@@ -50,4 +50,4 @@ if __name__ == '__main__':
     n_classes=n_classes, hidden_size=hidden_size, dataset=dataset,
     epochs=epochs, sampling_rate=sampling_rate, window_size=window_size,
     window_step=window_step, running_on_hpc=running_on_hpc, windows=windows,
-    dataset_path=dataset_path, normalize=normalize)
+    dataset_path=dataset_path, normalize_flag=normalize)
