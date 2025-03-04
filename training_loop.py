@@ -63,7 +63,7 @@ def run_epoch(
         model_output = model_output.permute(1, 0, 2)  # Assuming log probs are computed in network
         
         if windows:
-           model_output = model_output.view(
+           model_output = model_output.reshape(
                model_output.shape[0] * model_output.shape[1], model_config.n_classes)
 
         n_timesteps = model_output.shape[0]
@@ -154,8 +154,8 @@ def main(
     model = NaiveCaller(num_classes=n_classes)
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'min', patience=10, threshold=0.0001)
+    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #    optimizer, 'min', patience=10, threshold=0.0001)
 
     labels_int = np.arange(n_classes).tolist()
     labels = [f"{i}" for i in labels_int] # Tokens to be fed into greedy decoder
@@ -215,9 +215,9 @@ def main(
         wandb.log(metrics)
 
         # Schedule learning rate change
-        scheduler.step(np.mean(validation_losses))
-        current_lr = optimizer.param_groups[0]['lr']
-        print(current_lr)
+        #scheduler.step(np.mean(validation_losses))
+        #current_lr = optimizer.param_groups[0]['lr']
+        #print(current_lr)
 
         print(f"\nValidation Epoch {epoch}\n Mean Loss {np.mean(validation_losses)}"
               f"\n Mean ratio {np.mean(validation_ratios)}\n")
