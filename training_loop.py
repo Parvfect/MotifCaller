@@ -57,7 +57,7 @@ def run_epoch(
             
             input_sequence = torch.tensor(
                 input_sequence, dtype=torch.float32)
-            input_sequence = input_sequence.view(1, 1, len(input_sequence)).to(device)
+            input_sequence = input_sequence.view(1, 1, len(X[ind])).to(device)
 
         model_output = model(input_sequence)
         model_output = model_output.permute(1, 0, 2)  # Assuming log probs are computed in network
