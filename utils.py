@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import copy
 from typing import List, Tuple
+from nn import NaiveCaller
 
 
 def get_savepaths(running_on_hpc: bool = False) -> Tuple[str, str, str]:
@@ -215,22 +216,38 @@ def display_metrics(
 
 
 def get_metrics_for_evaluation(
-        greedy_decoder, model_output_timestep, target_sequence, loss, payload_sequence=None):
+        predicted_sequence, actual_transcript, loss, payload_sequence=None):
 
-    greedy_result = greedy_decoder(model_output_timestep)
-    greedy_transcript = " ".join(greedy_result)
-    actual_transcript = get_actual_transcript(target_sequence)
     target_metrics = get_motifs_identified(
-        actual_transcript, greedy_transcript)
+        actual_transcript, predicted_sequence)
 
     if payload_sequence:
         payload_transcript = get_actual_transcript(payload_sequence)
         payload_metrics = get_motifs_identified(
-            payload_transcript, greedy_transcript)
-        return greedy_transcript, actual_transcript, payload_transcript, target_metrics, payload_metrics
+            payload_transcript, predicted_sequence)
+        return target_metrics, payload_metrics
     
-    return greedy_transcript, actual_transcript, target_metrics
+    return target_metrics
 
 
 def get_bases_identified(target_seq, decoded_seq):
     return sum([i==j for i, j in zip(target_seq, decoded_seq)])/len(target_seq)
+
+
+def load_model(model_path, device, n_classes):
+    """
+    Loading model purely for inference
+    Will need to lead optimizer to fine tune
+    """
+    # Model Definition
+    model = NaiveCaller(num_classes=n_classes)
+    
+    if device == torch.device('cpu'):
+        checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
+    else:
+        checkpoint = torch.load(model_path)
+
+    model.load_state_dict(checkpoint['model_state_dict'])
+
+    model = model.to(device)
+    return model

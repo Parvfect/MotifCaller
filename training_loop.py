@@ -14,7 +14,8 @@ import torch.nn as nn
 from torch.nn import CTCLoss
 import torch.optim as optim
 from sklearn.model_selection import train_test_split
-from utils import get_actual_transcript, get_savepaths
+from utils import get_actual_transcript, get_savepaths, sort_transcript
+from evaluation import evaluate_cycle_prediction
 import numpy as np
 from typing import List, Dict
 import random
@@ -32,6 +33,8 @@ def run_epoch(
     losses = np.zeros(n_training_samples)
     edit_distance_ratios = []
     greedy_transcripts = []
+    motifs_found_arr = []
+    motif_errs_arr = []
     display_iterations = int(n_training_samples / 2)
     device = model_config.device
 
@@ -85,12 +88,23 @@ def run_epoch(
         
         losses[ind] = loss.item()
         
-        if ind % 1000 == 0:
+        if ind % 20 == 0:
             greedy_result = decoder(model_output)
             greedy_transcript = " ".join(greedy_result)
             actual_transcript = get_actual_transcript(y[ind])
+            print(greedy_transcript)
+            print(actual_transcript)
+            sorted_greedy = sort_transcript(greedy_transcript)
+            sorted_actual = sort_transcript(actual_transcript)
+            print(sorted_greedy)
+            print(sorted_actual)
+            motifs_found, motif_errs = evaluate_cycle_prediction(
+                sorted_greedy, sorted_actual)
+            print(motifs_found)
+            print(motif_errs)
             edit_distance_ratios.append(ratio(greedy_transcript, actual_transcript))
-            greedy_transcripts.append(greedy_transcript)
+            motifs_found_arr.append(motifs_found)
+            motif_errs_arr.append(motif_errs)
             
         if display:
             if ind % display_iterations == 0 and ind > 0:
@@ -101,7 +115,8 @@ def run_epoch(
         "model": model,
         "losses": losses,
         "edit_distance_ratios": edit_distance_ratios,
-        "greedy_transcripts": greedy_transcripts
+        "motifs_found": motifs_found_arr,
+        "motif_errs": motif_errs_arr
     }
         
 
@@ -128,8 +143,6 @@ def main(
         X = data_preproc(
             X=X, window_size=window_size, step_size=window_step,
             normalize_values=normalize_flag)
-
-    #y = create_label_for_training(y)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
@@ -190,11 +203,11 @@ def main(
         model = train_dict['model']
         training_losses = train_dict['losses']
         training_ratios = train_dict['edit_distance_ratios']
-        training_greedy_transcripts = train_dict['greedy_transcripts']
+        training_motifs_found = train_dict['motifs_found']
+        training_motif_errs = train_dict['motif_errs']
         
         print(f"\nTrain Epoch {epoch}\n Mean Loss {np.mean(training_losses)}"
               f"\n Mean ratio {np.mean(training_ratios)}\n")
-        print(random.sample(training_greedy_transcripts, 1))
             
         validate_dict = run_epoch(
             model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
@@ -203,13 +216,18 @@ def main(
         
         validation_losses = validate_dict['losses']
         validation_ratios = validate_dict['edit_distance_ratios']
-        validation_greedy_transcripts = train_dict['greedy_transcripts']
+        validation_motifs_found = validate_dict['motifs_found']
+        validation_motif_errs = validate_dict['motif_errs']
 
         metrics = {
             "train/accuracy": np.mean(training_ratios),
             "train/loss": np.mean(training_losses),
+            "train/motifs_found": np.mean(training_motifs_found),
+            "train/motif_errs": np.mean(training_motif_errs),
             "validation/accuracy": np.mean(validation_ratios),
-            "validation/loss": np.mean(validation_losses)
+            "validation/loss": np.mean(validation_losses),
+            "validation/motifs_found": np.mean(validation_motifs_found),
+            "validation/motif_errs": np.mean(validation_motif_errs),
         }
 
         wandb.log(metrics)
@@ -229,8 +247,8 @@ def main(
                     f"Validation loss {np.mean(validation_losses)}")
             f.write(f"\nEdit distance ratio: Training {np.mean(training_ratios)}\n"
                     f"Validation {np.mean(validation_ratios)}")
-            f.write(f"Transcripts: \n{random.sample(training_greedy_transcripts, 1)}\n"
-                    f"{random.sample(validation_greedy_transcripts, 1)}\n")
+            f.write(f"Motif metrics (found/err): \n{np.mean(training_motifs_found)}{np.mean(training_motif_errs)}\n"
+                    f"\n{np.mean(validation_motifs_found)}{np.mean(validation_motif_errs)}\n")
         
         if epoch % model_save_epochs == 0 and epoch > 0:
             if model_save_path:
@@ -245,16 +263,26 @@ def main(
         X=X_test, y=y_test, ctc=ctc, windows=windows, normalize_flag=normalize_flag
         )
     
-    test_losses = validate_dict['losses']
-    test_ratios = validate_dict['edit_distance_ratios']
-    test_greedy_transcripts = train_dict['greedy_transcripts']
+    test_losses = test_dict['losses']
+    test_ratios = test_dict['edit_distance_ratios']
+    test_motifs_found = test_dict['motifs_found']
+    test_motif_errs = test_dict['motif_errs']
     print(f"\nTest Loop\n Mean Loss {np.mean(test_losses)}\n"
           f"Mean ratio {np.mean(test_ratios)}\n")
 
     with open(file_write_path, 'a') as f:
         f.write(f"\nTest loss {np.mean(test_losses)}\n Test ratio"
-                f" {np.mean(test_ratios)}\nTest transcripts :\n"
-                f"{random.sample(validation_greedy_transcripts, 1)}")
+                f" {np.mean(test_ratios)}\nTest motifs :\n"
+                f"{test_motifs_found}{test_motif_errs}")
+        
+    metrics = {
+            "test/accuracy": np.mean(test_ratios),
+            "test/loss": np.mean(test_losses),
+            "test/motifs_found": np.mean(test_motifs_found),
+            "test/motif_errs": np.mean(test_motif_errs)
+        }
+
+    wandb.log(metrics)
 
     if model_save_path:
         torch.save({
