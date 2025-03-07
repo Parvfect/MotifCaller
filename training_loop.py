@@ -88,22 +88,27 @@ def run_epoch(
         
         losses[ind] = loss.item()
         
-        if ind % 20 == 0:
-            greedy_result = decoder(model_output)
-            greedy_transcript = " ".join(greedy_result)
-            actual_transcript = get_actual_transcript(y[ind])
-            sorted_greedy = sort_transcript(greedy_transcript)
-            sorted_actual = sort_transcript(actual_transcript)
-            motifs_found, motif_errs = evaluate_cycle_prediction(
-                sorted_greedy, sorted_actual)
-            edit_distance_ratios.append(ratio(greedy_transcript, actual_transcript))
-            motifs_found_arr.append(motifs_found)
-            motif_errs_arr.append(motif_errs)
-            
-        if display:
-            if ind % display_iterations == 0 and ind > 0:
-                print(f"\nLoss is {loss.item()}")
-                print(f"Ratio is {np.mean(edit_distance_ratios)}\n")
+        #if ind % 1 == 0:
+        greedy_result = decoder(model_output)
+        greedy_transcript = " ".join(greedy_result)
+        actual_transcript = get_actual_transcript(y[ind])
+        sorted_greedy = sort_transcript(greedy_transcript)
+        sorted_actual = sort_transcript(actual_transcript)
+        motifs_found, motif_errs = evaluate_cycle_prediction(
+            sorted_greedy, sorted_actual)
+        edit_distance_ratios.append(ratio(greedy_transcript, actual_transcript))
+        motifs_found_arr.append(motifs_found)
+        motif_errs_arr.append(motif_errs)
+
+        ratio_labels = n_timesteps/len(y[ind])
+        #print(f"\n{ratio_labels} aah {len(y[ind])}")
+        
+        if ind % 100 == 0:
+            print(greedy_transcript)
+            print(actual_transcript)
+            print(sorted_greedy)
+            print(sorted_actual)
+
         
     return {
         "model": model,
@@ -118,7 +123,7 @@ def main(
         n_classes: int, epochs: int = 50, sampling_rate: float = 1.0,
         window_size: int = 1024, window_step: int = 800,
         running_on_hpc: bool = False, windows: bool = True,
-        dataset_path: str = None, hidden_size: int = 256, n_layers: int = 3,
+        dataset_path: str = None, hidden_size: int = 1024, n_layers: int = 3,
         dataset: str = "", normalize_flag: bool = False):
     
     if dataset_path:
@@ -158,7 +163,7 @@ def main(
     model = MotifCaller(
         n_classes=n_classes, hidden_size=hidden_size, n_layers=n_layers).to(device)
     """
-    model = NaiveCaller(num_classes=n_classes)
+    model = NaiveCaller(num_classes=n_classes, hidden_dim=hidden_size)
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -201,7 +206,9 @@ def main(
         training_motif_errs = train_dict['motif_errs']
         
         print(f"\nTrain Epoch {epoch}\n Mean Loss {np.mean(training_losses)}"
-              f"\n Mean ratio {np.mean(training_ratios)}\n")
+              f"\n Mean ratio {np.mean(training_ratios)}"
+              f"\n Mean motifs identified {np.mean(training_motifs_found)}"
+              f"\n Mean motif errs {np.mean(training_motif_errs)}")
             
         validate_dict = run_epoch(
             model=model, model_config=model_config, optimizer=optimizer, decoder=greedy_decoder,
@@ -232,7 +239,9 @@ def main(
         #print(current_lr)
 
         print(f"\nValidation Epoch {epoch}\n Mean Loss {np.mean(validation_losses)}"
-              f"\n Mean ratio {np.mean(validation_ratios)}\n")
+              f"\n Mean ratio {np.mean(validation_ratios)}"
+              f"\n Mean motifs identified {np.mean(validation_motifs_found)}"
+              f"\n Mean motif errs {np.mean(validation_motif_errs)}")
         #print(random.sample(validation_greedy_transcripts, 1))
 
 
@@ -262,7 +271,9 @@ def main(
     test_motifs_found = test_dict['motifs_found']
     test_motif_errs = test_dict['motif_errs']
     print(f"\nTest Loop\n Mean Loss {np.mean(test_losses)}\n"
-          f"Mean ratio {np.mean(test_ratios)}\n")
+          f"Mean ratio {np.mean(test_ratios)}"
+          f"\n Mean motifs identified {np.mean(test_motifs_found)}"
+          f"\n Mean motif errs {np.mean(test_motif_errs)}")
 
     with open(file_write_path, 'a') as f:
         f.write(f"\nTest loss {np.mean(test_losses)}\n Test ratio"
