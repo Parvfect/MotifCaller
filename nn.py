@@ -72,9 +72,9 @@ class NaiveCaller(nn.Module):
             nn.Conv1d(4, 16, kernel_size=5, stride=3),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=5, stride=3),
-            nn.Conv1d(16, 64, kernel_size=5, stride=1),
+            nn.Conv1d(16, 64, kernel_size=5, stride=2),
             nn.ReLU(),
-            nn.Conv1d(64, conv_out, kernel_size=5, stride=1)
+            nn.Conv1d(64, conv_out, kernel_size=5, stride=2)
             #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
         )
         
