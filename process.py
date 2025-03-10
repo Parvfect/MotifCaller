@@ -23,12 +23,13 @@ parser.add_argument('--hidden_size', type=int)
 parser.add_argument('--n_classes', type=int)
 parser.add_argument('--dataset', type=str)
 parser.add_argument('--normalize', action='store_true')
+parser.add_argument('--lr', type=float)
 
 
 parser.set_defaults(
     epochs=50, window_size=1024, window_step=800, sampling_rate=1.0,
-    running_on_hpc=False, no_windows=False, dataset_path=None, hidden_size=1024,
-    n_classes=17, dataset="", normalize=False
+    running_on_hpc=False, no_windows=False, dataset_path=None, hidden_size=256,
+    n_classes=17, dataset="", normalize=False, lr=0.001
     )
 
 args = parser.parse_args()
@@ -45,9 +46,10 @@ if __name__ == '__main__':
     n_classes = args.n_classes
     dataset = args.dataset
     normalize = args.normalize
+    lr = args.lr
 
     main(
     n_classes=n_classes, hidden_size=hidden_size, dataset=dataset,
     epochs=epochs, sampling_rate=sampling_rate, window_size=window_size,
     window_step=window_step, running_on_hpc=running_on_hpc, windows=windows,
-    dataset_path=dataset_path, normalize_flag=normalize)
+    dataset_path=dataset_path, normalize_flag=normalize, lr=lr)

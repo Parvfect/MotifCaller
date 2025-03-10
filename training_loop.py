@@ -66,16 +66,21 @@ def run_epoch(
         model_output = model_output.permute(1, 0, 2)  # Assuming log probs are computed in network
         
         if windows:
+           #print(model_output.shape)
            model_output = model_output.reshape(
-               model_output.shape[0] * model_output.shape[1], model_config.n_classes)
+               model_output.shape[0] * model_output.shape[1], 1, model_config.n_classes)
+           #print(model_output.shape)
 
         n_timesteps = model_output.shape[0]
         input_lengths = torch.tensor([n_timesteps])
         label_lengths = torch.tensor([len(target_sequence)])
-        #print(n_timesteps/len(target_sequence))
+        
+        if ind == 1:
+            print(f"\n{n_timesteps/len(target_sequence)}")
 
         loss = ctc(
             log_probs=model_output, targets=target_sequence, input_lengths=input_lengths, target_lengths=label_lengths)
+        
         
         if train:
             try:
@@ -103,7 +108,7 @@ def run_epoch(
         ratio_labels = n_timesteps/len(y[ind])
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
-        if ind % 100 == 0:
+        if ind+1 % 1000 == 0:
             print(greedy_transcript)
             print(actual_transcript)
             print(sorted_greedy)
@@ -124,7 +129,7 @@ def main(
         window_size: int = 1024, window_step: int = 800,
         running_on_hpc: bool = False, windows: bool = True,
         dataset_path: str = None, hidden_size: int = 1024, n_layers: int = 3,
-        dataset: str = "", normalize_flag: bool = False):
+        dataset: str = "", normalize_flag: bool = False, lr:int = 0.001):
     
     if dataset_path:
         _, model_save_path, file_write_path = get_savepaths(
@@ -153,7 +158,6 @@ def main(
     dropout_rate = 0.2
     saved_model = False
     model_save_epochs = 1
-    lr = 0.001
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.set_default_device(device)
@@ -170,7 +174,7 @@ def main(
     #    optimizer, 'min', patience=10, threshold=0.0001)
 
     labels_int = np.arange(n_classes).tolist()
-    labels = [f"{i}" for i in labels_int] # Tokens to be fed into greedy decoder
+    labels = [f"{i}" for i in labels_int]  # Tokens to be fed into greedy decoder
     greedy_decoder = GreedyCTCDecoder(labels=labels)
 
 

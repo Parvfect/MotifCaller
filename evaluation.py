@@ -2,7 +2,6 @@
 from typing import List, Tuple
 
 
-
 def evaluate_cycle_prediction(
         prediction: List[List[str]], original: List[List[str]]) -> Tuple[float, float]:
 
