@@ -9,3 +9,4 @@
 **/wandb
 wandb_api_key.txt
 **/models
+*.bam
