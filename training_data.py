@@ -14,9 +14,15 @@ def load_training_data(
     sampling_rate: float = 1, payload=False):
 
     if not dataset_path:
-        dataset_path = os.path.join(os.environ['HOME'], "empirical_train_dataset_v5_payload_seq.pkl")
+        dataset_path = os.path.join(
+            os.environ['HOME'], "empirical_train_dataset_v5_payload_seq.pkl")
         
     dataset = pd.read_pickle(dataset_path)
+
+    # Filtering out rc
+    print(len(dataset))
+    dataset = dataset.loc[dataset['orientation'] == '+']
+    print(f"Selected {len(dataset)} forward reads")
 
     n = int(len(dataset) * sampling_rate)
     dataset = dataset.sample(n=n, random_state=1)

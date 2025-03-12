@@ -108,9 +108,9 @@ def run_epoch(
         ratio_labels = n_timesteps/len(y[ind])
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
-        if ind+1 % 1000 == 0:
+        if ind+1 % 20 == 0:
             print(greedy_transcript)
-            print(actual_transcript)
+            #print(actual_transcript)
             print(sorted_greedy)
             print(sorted_actual)
 

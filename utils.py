@@ -19,7 +19,7 @@ def get_savepaths(running_on_hpc: bool = False) -> Tuple[str, str, str]:
         savepath = os.path.join(
             r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\motifcaller\training_logs", f"{uid}")
 
-        dataset_path = r"C:\Users\Parv\OneDrive\Documents\University\cluster_files\synthetic_post_review.pkl"
+        dataset_path = r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\motifcaller\data\synthetic\pickled_datasets\no_spacers.pkl"
 
     os.mkdir(savepath)
 

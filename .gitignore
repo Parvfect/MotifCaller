@@ -10,3 +10,5 @@
 wandb_api_key.txt
 **/models
 *.bam
+*.csv
+*.json

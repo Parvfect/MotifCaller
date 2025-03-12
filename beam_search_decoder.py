@@ -49,7 +49,7 @@ def update_alignments(alignments, alignment_probs, top_tokens, top_probs, beam_w
     return new_alignments[:beam_width], new_alignment_probs[:beam_width]
 
 
-def beam_search_ctc(prob_matrix, beam_width=3, blank=0, n_classes=17):
+def beam_search_ctc(prob_matrix, beam_width=3, blank=0, n_classes=17, return_alignments=False):
     
     # Get top n probabilities and their corresponding indices for each time step
     # Create a list of alignments sequentially, collapsing and combining as you go
@@ -65,5 +65,7 @@ def beam_search_ctc(prob_matrix, beam_width=3, blank=0, n_classes=17):
         alignments, alignment_probs = update_alignments(
             alignments, alignment_probs, top_tokens, top_probs,
             beam_width=beam_width)
-
+        
+    if return_alignments:
+        return alignments
     return " ".join([str(i) for i in alignments[0]])
