@@ -19,7 +19,7 @@ def get_savepaths(running_on_hpc: bool = False) -> Tuple[str, str, str]:
         savepath = os.path.join(
             r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\motifcaller\training_logs", f"{uid}")
 
-        dataset_path = r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\motifcaller\data\synthetic\pickled_datasets\no_spacers.pkl"
+        dataset_path = r"C:\Users\Parv\Doc\HelixWorks\Basecalling\code\motifcaller\data\synthetic\pickled_datasets\reduced_spacers_basecalled.pkl"
 
     os.mkdir(savepath)
 
@@ -103,7 +103,6 @@ def sort_transcript(transcript):
 
             # finding the spacers - only for payload cycles
             if i > 0:
-
                 # Checking for Back Spacer
                 if split_transcript[i-1] > 10:
                     cycle_number = split_transcript[i-1] - 11
@@ -123,6 +122,31 @@ def sort_transcript(transcript):
                         cycles[cycle_number].append(split_transcript[i])   
 
     return cycles
+
+def sort_transcript_reduced_spacers(transcript: str):
+    " 12 4 3 5 4 12 4 5 6 13 "
+
+    split_transcript = transcript.split()
+    sorted_transcript = []
+    flag = False
+    cycle_number = ""
+
+    for i in split_transcript:
+        if not i == ' ':
+            if int(i) > 8:
+                if not i == cycle_number:
+                    sorted_transcript.append([])
+                    cycle_number = i
+                else:
+                    continue
+            else:
+                if len(sorted_transcript) == 0:
+                    sorted_transcript.append([])
+                sorted_transcript[-1].append(int(i))
+
+    return sorted_transcript
+        
+            
 
 
 def create_spacer_sequence(cycles):

@@ -14,7 +14,7 @@ import torch.nn as nn
 from torch.nn import CTCLoss
 import torch.optim as optim
 from sklearn.model_selection import train_test_split
-from utils import get_actual_transcript, get_savepaths, sort_transcript
+from utils import get_actual_transcript, get_savepaths, sort_transcript, sort_transcript_reduced_spacers
 from evaluation import evaluate_cycle_prediction
 import numpy as np
 from typing import List, Dict
@@ -93,12 +93,11 @@ def run_epoch(
         
         losses[ind] = loss.item()
         
-        #if ind % 1 == 0:
         greedy_result = decoder(model_output)
         greedy_transcript = " ".join(greedy_result)
         actual_transcript = get_actual_transcript(y[ind])
-        sorted_greedy = sort_transcript(greedy_transcript)
-        sorted_actual = sort_transcript(actual_transcript)
+        sorted_greedy = sort_transcript_reduced_spacers(greedy_transcript)
+        sorted_actual = sort_transcript_reduced_spacers(actual_transcript)
         motifs_found, motif_errs = evaluate_cycle_prediction(
             sorted_greedy, sorted_actual)
         edit_distance_ratios.append(ratio(greedy_transcript, actual_transcript))
@@ -108,7 +107,7 @@ def run_epoch(
         ratio_labels = n_timesteps/len(y[ind])
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
-        if ind+1 % 20 == 0:
+        if ind % 20 == 0 and not ind == 0:
             print(greedy_transcript)
             #print(actual_transcript)
             print(sorted_greedy)
