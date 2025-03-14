@@ -61,7 +61,7 @@ class MotifCaller(nn.Module):
 
 
 class NaiveCaller(nn.Module):
-    def __init__(self, input_dim=1, conv_out=128, hidden_dim=256, num_layers=3, num_classes=5):
+    def __init__(self, input_dim=1, conv_out=128, hidden_dim=512, num_layers=3, num_classes=5):
         super(NaiveCaller, self).__init__()
 
         # Convolutional feature extractor
@@ -81,7 +81,11 @@ class NaiveCaller(nn.Module):
         
         # BiLSTM for sequential modeling
         self.lstm = nn.LSTM(conv_out, hidden_dim, num_layers, 
-                            batch_first=True, bidirectional=True)
+                            batch_first=True, bidirectional=True, dropout=0.3)
+        
+        self.bigru = GRU(
+            input_size=conv_out, hidden_size=hidden_dim, num_layers=num_layers,
+            batch_first=True, bidirectional=True, dropout=0.2)
         
         # Linear layer to output base probabilities
         self.fc = nn.Linear(hidden_dim * 2, num_classes)  # *2 for bidirectional LSTM
@@ -94,7 +98,8 @@ class NaiveCaller(nn.Module):
         x = self.cnn(x)  # Apply CNN
         x = x.permute(0, 2, 1)  # Change back to (batch, seq_len, conv_out) for LSTM
 
-        x, _ = self.lstm(x)  # LSTM processes sequence
+        #x, _ = self.lstm(x)  # LSTM processes sequence
+        x, _ = self.bigru(x)
         x = self.fc(x)  # Output shape: (batch, seq_len, num_classes)
         #return x
         return F.log_softmax(x, dim=-1)

@@ -20,9 +20,9 @@ def load_training_data(
     dataset = pd.read_pickle(dataset_path)
 
     # Filtering out rc
-    #print(len(dataset))
-    #dataset = dataset.loc[dataset['orientation'] == '+']
-    #print(f"Selected {len(dataset)} forward reads")
+    print(len(dataset))
+    dataset = dataset.loc[dataset['orientation'] == '+']
+    print(f"Selected {len(dataset)} forward reads")
 
     n = int(len(dataset) * sampling_rate)
     dataset = dataset.sample(n=n, random_state=1)

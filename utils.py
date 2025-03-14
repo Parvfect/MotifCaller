@@ -264,7 +264,7 @@ def load_model(model_path, device, n_classes):
     Will need to lead optimizer to fine tune
     """
     # Model Definition
-    model = NaiveCaller(num_classes=n_classes)
+    model = NaiveCaller(num_classes=n_classes, hidden_dim=512)
     
     if device == torch.device('cpu'):
         checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
