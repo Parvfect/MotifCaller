@@ -21,7 +21,7 @@ def load_training_data(
 
     # Filtering out rc
     print(len(dataset))
-    dataset = dataset.loc[dataset['orientation'] == '+']
+    dataset = dataset.loc[dataset['orientation'].str.startswith('+')]
     print(f"Selected {len(dataset)} forward reads")
 
     n = int(len(dataset) * sampling_rate)
