@@ -66,15 +66,15 @@ class NaiveCaller(nn.Module):
 
         # Convolutional feature extractor
         self.cnn = nn.Sequential(
-            nn.Conv1d(input_dim, 4, kernel_size=5, stride=1),  
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=5),
-            nn.Conv1d(4, 16, kernel_size=5, stride=2),
+            nn.Conv1d(input_dim, 32, kernel_size=5, stride=1, dilation=1),  
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=5, stride=3),
-            nn.Conv1d(16, 64, kernel_size=5, stride=2),
+            nn.Conv1d(32, 64, kernel_size=5, stride=2, dilation=2),
             nn.ReLU(),
-            nn.Conv1d(64, conv_out, kernel_size=5, stride=2),
+            nn.MaxPool1d(kernel_size=5, stride=3),
+            nn.Conv1d(64, 128, kernel_size=7, stride=2, dilation=2),
+            nn.ReLU(),
+            nn.Conv1d(128, conv_out, kernel_size=7, stride=2, dilation=4),
             nn.ReLU()
             #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
         )
