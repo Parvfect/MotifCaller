@@ -11,7 +11,7 @@ import pickle
 
 def load_training_data(
     dataset_path=None, column_x='squiggle', column_y='motif_seq',
-    sampling_rate: float = 1, payload=False):
+    sampling_rate: float = 1, payload=False, orientation=True):
 
     if not dataset_path:
         dataset_path = os.path.join(
@@ -20,9 +20,10 @@ def load_training_data(
     dataset = pd.read_pickle(dataset_path)
 
     # Filtering out rc
-    print(len(dataset))
-    dataset = dataset.loc[dataset['orientation'].str.startswith('+')]
-    print(f"Selected {len(dataset)} forward reads")
+    if orientation:
+        print(len(dataset)) 
+        dataset = dataset.loc[dataset['orientation'].str.startswith('+')]
+        print(f"Selected {len(dataset)} forward reads")
 
     n = int(len(dataset) * sampling_rate)
     dataset = dataset.sample(n=n, random_state=1)

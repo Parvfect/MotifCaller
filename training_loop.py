@@ -14,7 +14,8 @@ import torch.nn as nn
 from torch.nn import CTCLoss
 import torch.optim as optim
 from sklearn.model_selection import train_test_split
-from utils import get_actual_transcript, get_savepaths, sort_transcript, sort_transcript_reduced_spacers
+from utils import get_actual_transcript, get_savepaths
+from transcript_sorting import sort_transcript, sort_transcript_reduced_spacers
 from evaluation import evaluate_cycle_prediction
 import numpy as np
 from typing import List, Dict
@@ -107,7 +108,7 @@ def run_epoch(
         ratio_labels = n_timesteps/len(y[ind])
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
-        if ind % 200 == 0 and not ind == 0:
+        if ind % 40 == 0 and not ind == 0:
             print(greedy_transcript)
             #print(actual_transcript)
             print(sorted_greedy)
@@ -129,7 +130,7 @@ def main(
         running_on_hpc: bool = False, windows: bool = True,
         dataset_path: str = None, hidden_size: int = 1024, n_layers: int = 3,
         dataset: str = "", normalize_flag: bool = False, lr:int = 0.001):
-    
+
     if dataset_path:
         _, model_save_path, file_write_path = get_savepaths(
             running_on_hpc=running_on_hpc)
@@ -183,6 +184,8 @@ def main(
         model_save_path = model_save_path, write_path=file_write_path,
         dataset=dataset, windows=windows, sampling_rate=sampling_rate
     )
+
+    print(model_config.__dict__())
     
     ctc = nn.CTCLoss(blank=0, reduction='mean', zero_infinity=True)
 

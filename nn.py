@@ -64,12 +64,14 @@ class NaiveCaller(nn.Module):
     def __init__(self, input_dim=1, conv_out=128, hidden_dim=128, num_layers=3, num_classes=5):
         super(NaiveCaller, self).__init__()
 
+        
+        
         # Convolutional feature extractor
         self.cnn = nn.Sequential(
             nn.Conv1d(input_dim, 32, kernel_size=5, stride=1, dilation=1),  
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=5, stride=3),
-            nn.Conv1d(32, 64, kernel_size=5, stride=2, dilation=2),
+            nn.Conv1d(32, 64, kernel_size=5, stride=1, dilation=2),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=5, stride=3),
             nn.Conv1d(64, 128, kernel_size=7, stride=2, dilation=2),
@@ -79,10 +81,29 @@ class NaiveCaller(nn.Module):
             #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
         )
         
+        
+        """
+        # Convolutional feature extractor
+        self.cnn = nn.Sequential(
+            nn.Conv1d(input_dim, 4, kernel_size=5, stride=1),  
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=5, stride=3),
+            nn.Conv1d(4, 16, kernel_size=5, stride=2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=5, stride=3),
+            nn.Conv1d(16, 64, kernel_size=5, stride=2),
+            nn.ReLU(),
+            nn.Conv1d(64, conv_out, kernel_size=5, stride=2),
+            nn.ReLU()
+            #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
+        )
+        
+        
         # BiLSTM for sequential modeling
         self.lstm = nn.LSTM(conv_out, hidden_dim, num_layers, 
                             batch_first=True, bidirectional=True, dropout=0.3)
-        
+        """
+
         self.bigru = GRU(
             input_size=conv_out, hidden_size=hidden_dim, num_layers=num_layers,
             batch_first=True, bidirectional=True, dropout=0.2)

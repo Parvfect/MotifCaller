@@ -258,13 +258,13 @@ def get_bases_identified(target_seq, decoded_seq):
     return sum([i==j for i, j in zip(target_seq, decoded_seq)])/len(target_seq)
 
 
-def load_model(model_path, device, n_classes):
+def load_model(model_path, device, n_classes, hidden_size=128):
     """
     Loading model purely for inference
     Will need to lead optimizer to fine tune
     """
     # Model Definition
-    model = NaiveCaller(num_classes=n_classes, hidden_dim=512)
+    model = NaiveCaller(num_classes=n_classes, hidden_dim=hidden_size)
     
     if device == torch.device('cpu'):
         checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
