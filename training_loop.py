@@ -105,7 +105,6 @@ def run_epoch(
         motifs_found_arr.append(motifs_found)
         motif_errs_arr.append(motif_errs)
 
-        ratio_labels = n_timesteps/len(y[ind])
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
         if ind % 40 == 0 and not ind == 0:
