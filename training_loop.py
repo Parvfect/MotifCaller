@@ -72,6 +72,8 @@ def run_epoch(
                model_output.shape[0] * model_output.shape[1], 1, model_config.n_classes)
            #print(model_output.shape)
 
+        model_output_flattened = model_output.view(
+            model_output.shape[0] * model_output.shape[1], model_config.n_classes)
         n_timesteps = model_output.shape[0]
         input_lengths = torch.tensor([n_timesteps])
         label_lengths = torch.tensor([len(target_sequence)])
@@ -94,7 +96,7 @@ def run_epoch(
         
         losses[ind] = loss.item()
         
-        greedy_result = decoder(model_output)
+        greedy_result = decoder(model_output_flattened)
         greedy_transcript = " ".join(greedy_result)
         actual_transcript = get_actual_transcript(y[ind])
         sorted_greedy = sort_transcript_reduced_spacers(greedy_transcript)
