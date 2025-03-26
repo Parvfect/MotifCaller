@@ -63,9 +63,9 @@ class NaiveCaller(nn.Module):
     def __init__(self, input_dim=1, conv_out=128, hidden_dim=128, num_layers=3, num_classes=5):
         super(NaiveCaller, self).__init__()
         
-        self.conv1 = nn.Conv1d(input_dim, 32, kernel_size=3, padding=1, stride=2)
-        self.pool = nn.MaxPool1d(kernel_size=3, stride=3)
-        self.conv2 = nn.Conv1d(32, 64, kernel_size=3, padding=1, stride=2)
+        self.conv1 = nn.Conv1d(input_dim, 32, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv2 = nn.Conv1d(32, 64, kernel_size=3, padding=1)
 
         self.fc = nn.Linear(64, hidden_dim)
 
