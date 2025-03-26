@@ -23,31 +23,77 @@ import random
 from model_config import ModelConfig
 from training_monitoring import wandb_login, start_wandb_run
 import wandb
+from beam_search_decoder import beam_search_ctc
+from torch.nn.utils.rnn import pad_sequence
+import torch.nn.functional as F
 
 
 def run_epoch(
         model: MotifCaller, model_config: ModelConfig, optimizer: torch.optim, decoder: any, 
         X: List[torch.tensor], y: List[List[int]], ctc: CTCLoss, train: bool = False,
         display: bool = False, windows: bool = True, normalize_flag: bool = False) -> Dict[str, any]:
+    
+    batch_size = 1
 
     n_training_samples = len(X)
-    losses = np.zeros(n_training_samples)
+    losses = np.zeros(int(n_training_samples/ batch_size))
     edit_distance_ratios = []
     greedy_transcripts = []
     motifs_found_arr = []
     motif_errs_arr = []
     display_iterations = int(n_training_samples / 2)
     device = model_config.device
+    n_classes = model_config.n_classes
 
     if train:
         model.train()
     else:
         model.eval()
+
+    # Generate a random permutation of indices
+    indices = np.random.permutation(len(X))
+
+    # Apply the permutation to both X and y
+    X_shuffled = [X[ind] for ind in indices]
+    y_shuffled = [y[ind] for ind in indices]
     
-    for ind in tqdm(range(n_training_samples)):
+    for ind in tqdm(range(0, n_training_samples, batch_size)):
         
         if train:
             optimizer.zero_grad()
+
+        # Batch - selecting first 32
+        #input_seqs = X[ind: ind + batch_size]
+        #input_seqs = torch.tensor(input_seqs)
+        """
+        input_seqs = pad_sequence([torch.tensor(
+                    i, dtype=torch.float32) for i in X[ind: ind + batch_size]], batch_first=True)
+        pad_length = input_seqs.shape[1]
+        n_samples = input_seqs.shape[0]
+        """
+        input_sequence = X[ind].to(device)
+        
+        target_sequence = torch.tensor(y[ind]).to(device)
+
+        #input_sequence = normalize([input_sequence], norm='l1')
+
+        model_output = model(input_sequence)
+
+        #model_output = model_output.permute(1, 0, 2)  # Assuming log probs are computed in network
+        #model_output = model_output.reshape(
+        #    model_output.shape[0] * model_output.shape[1], n_classes)
+        
+        model_output = F.log_softmax(model_output, dim=-1)
+        
+        n_timesteps = model_output.shape[0]
+        input_lengths = torch.tensor(n_timesteps)
+        label_lengths = torch.tensor(len(target_sequence))
+        
+        loss = ctc(
+            log_probs=model_output, targets=target_sequence, input_lengths=input_lengths, target_lengths=label_lengths)
+        
+        
+        """
 
         input_sequence = X[ind]
         target_sequence = torch.tensor(y[ind]).to(device)
@@ -83,20 +129,22 @@ def run_epoch(
 
         loss = ctc(
             log_probs=model_output, targets=target_sequence, input_lengths=input_lengths, target_lengths=label_lengths)
-        
-        
+        """
+
         if train:
             try:
                 loss.backward()
             except Exception as e:
                 print(f"Exception {e}")
-                print(target_sequence)
+                #print(target_sequence)
                 continue
             optimizer.step()
         
-        losses[ind] = loss.item()
-        
-        greedy_result = decoder(model_output_flattened)
+        losses[int(ind / batch_size)] = loss.item()
+
+        #model_output = model_output.permute(1, 0, 2)
+        #model_output_flattened = model_output[0]
+        greedy_result = decoder(model_output)
         greedy_transcript = " ".join(greedy_result)
         actual_transcript = get_actual_transcript(y[ind])
         sorted_greedy = sort_transcript_reduced_spacers(greedy_transcript)
@@ -109,11 +157,15 @@ def run_epoch(
 
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
-        if ind % 40 == 0 and not ind == 0:
+        if int(ind / batch_size) % 50 == 0:
+            #print(
+            #f"Downsampling by {n_timesteps/len(y[ind])}")
             print(greedy_transcript)
-            #print(actual_transcript)
-            print(sorted_greedy)
-            print(sorted_actual)
+            print(actual_transcript)
+            print(ratio(greedy_transcript, actual_transcript))
+            #print(sorted_greedy)
+            #print(sorted_actual)
+            print(loss.item())
 
         
     return {
@@ -169,6 +221,7 @@ def main(
         n_classes=n_classes, hidden_size=hidden_size, n_layers=n_layers).to(device)
     """
     model = NaiveCaller(num_classes=n_classes, hidden_dim=hidden_size)
+    #model = MotifCaller(input_size=1, hidden_size=256, num_layers=3, output_size=n_classes)
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(

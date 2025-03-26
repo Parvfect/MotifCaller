@@ -38,7 +38,7 @@ def load_training_data(
     return X, y
        
 
-def data_preproc(X, window_size=150, step_size=100, normalize_values=False):
+def data_preproc(X, window_size=200, step_size=150, normalize_values=False):
     """
     Splits each long read of the dataset into n windows determined by the window and step size. 
     """
@@ -65,6 +65,7 @@ def data_preproc(X, window_size=150, step_size=100, normalize_values=False):
         sequences_dataset.append(sequences)
 
     return sequences_dataset
+
 
 def create_label_for_training(y):
     """

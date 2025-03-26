@@ -4,123 +4,96 @@ import torch.nn as nn
 from torch.nn import Conv1d, MaxPool1d, GRU, Linear, CTCLoss
 import torch.nn.functional as F
 
-
-class ConvolutionalEncoder(nn.Module):
-    def __init__(self, hidden_size: int = 256):
-        super(ConvolutionalEncoder, self).__init__()
-        self.layer_1 = Conv1d(
-            in_channels=1, out_channels=4, stride=1, kernel_size=5)
-        self.layer_2 = Conv1d(
-            in_channels=4, out_channels=16, stride=1, kernel_size=5)
-        self.layer_3 = Conv1d(
-            in_channels=16, out_channels=64, stride=2, kernel_size=5)
-        self.layer_4 = Conv1d(
-            in_channels=64, out_channels=hidden_size, stride=2, kernel_size=19)
-
-    def forward(self, x):
-        x = F.relu(self.layer_1(x))
-        x = F.relu(self.layer_2(x))
-        x = F.relu(self.layer_3(x))
-        x = F.relu(self.layer_4(x))
-        x = x.permute(2, 0, 1)
-        return x
-    
-
-class RNNLayers(nn.Module):
-    def __init__(self, hidden_size, num_layers, n_classes):
-        super(RNNLayers, self).__init__()
-
-        self.bigru = GRU(
-            input_size=hidden_size, hidden_size=hidden_size, num_layers=num_layers,
-            batch_first=True, bidirectional=True)
-
-        self.output = Linear(hidden_size*2, n_classes)
-
-        self.num_layers = num_layers
-        self.hidden_size = hidden_size
-
-    
-    def forward(self, x):
-        h0 = torch.zeros(
-            self.num_layers * 2, x.size(0), self.hidden_size, device=x.device)
-        x, _ = self.bigru(x, h0)
-        return F.log_softmax(self.output(x), dim=2)
-
-
 class MotifCaller(nn.Module):
-    def __init__(self, hidden_size:int, n_layers:int, n_classes:int):
+
+    def __init__(self, input_size, hidden_size, num_layers, output_size, dropout_rate=0.2):
+
         super(MotifCaller, self).__init__()
-        self.cnn_layers = ConvolutionalEncoder(hidden_size=hidden_size)
-        self.rnn_layers = RNNLayers(
-            hidden_size=hidden_size, num_layers=n_layers, n_classes=n_classes)
+
+        # CNN Layers
+        self.conv1 = nn.Conv1d(in_channels=input_size, out_channels=32, kernel_size=3, padding=1)
+        self.norm1 = nn.LayerNorm(32)
+        self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
+
+        # Fully connected Layer
+        self.fc = nn.Linear(64, hidden_size)
+
+        # Bidirectional GRU layers
+        self.bigru = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True, bidirectional=True)
+
+        # Sequence Classifier
+        self.output = nn.Linear(hidden_size*2, output_size)
+
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
 
     def forward(self, x):
-        x = self.cnn_layers.forward(x)
-        x = self.rnn_layers.forward(x)
+        
+        # CNN layers
+        x = self.conv1(x)
+        x = torch.relu(x)
+        #x = self.norm1(x)
+        x = self.pool(x)
+
+        # Apply LayerNorm after permuting the dimensions
+        #x = x.permute(0, 2, 1)
+        #x = self.norm1(x)
+
+        x = self.conv2(x)
+        x = torch.relu(x)
+
+        # Fully connected layer
+        x = x.permute(0, 2, 1)
+        x = self.fc(x)
+
+        # Bidirectional GRU layers
+        h0 = torch.zeros(self.num_layers * 2, x.size(0), self.hidden_size)
+        x, _ = self.bigru(x, h0)
+
+        # Output layer
+        x = self.output(x)
+
+        #x = x.sum(dim=1)
         return x
+
 
 
 class NaiveCaller(nn.Module):
     def __init__(self, input_dim=1, conv_out=128, hidden_dim=128, num_layers=3, num_classes=5):
         super(NaiveCaller, self).__init__()
+        
+        self.conv1 = nn.Conv1d(input_dim, 32, kernel_size=3, padding=1, stride=2)
+        self.pool = nn.MaxPool1d(kernel_size=3, stride=3)
+        self.conv2 = nn.Conv1d(32, 64, kernel_size=3, padding=1, stride=2)
 
-        
-        
-        # Convolutional feature extractor
-        self.cnn = nn.Sequential(
-            nn.Conv1d(input_dim, 32, kernel_size=5, stride=1, dilation=1),  
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=3),
-            nn.Conv1d(32, 64, kernel_size=5, stride=1, dilation=2),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=3),
-            nn.Conv1d(64, 128, kernel_size=7, stride=2, dilation=2),
-            nn.ReLU(),
-            nn.Conv1d(128, conv_out, kernel_size=7, stride=2, dilation=4),
-            nn.ReLU()
-            #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
-        )
-        
-        
-        """
-        # Convolutional feature extractor
-        self.cnn = nn.Sequential(
-            nn.Conv1d(input_dim, 4, kernel_size=5, stride=1),  
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=3),
-            nn.Conv1d(4, 16, kernel_size=5, stride=2),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=3),
-            nn.Conv1d(16, 64, kernel_size=5, stride=2),
-            nn.ReLU(),
-            nn.Conv1d(64, conv_out, kernel_size=5, stride=2),
-            nn.ReLU()
-            #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
-        )
-        
-        
-        # BiLSTM for sequential modeling
-        self.lstm = nn.LSTM(conv_out, hidden_dim, num_layers, 
-                            batch_first=True, bidirectional=True, dropout=0.3)
-        """
+        self.fc = nn.Linear(64, hidden_dim)
 
         self.bigru = GRU(
-            input_size=conv_out, hidden_size=hidden_dim, num_layers=num_layers,
+            input_size=hidden_dim, hidden_size=hidden_dim, num_layers=num_layers,
             batch_first=True, bidirectional=True, dropout=0.2)
         
         # Linear layer to output base probabilities
-        self.fc = nn.Linear(hidden_dim * 2, num_classes)  # *2 for bidirectional LSTM
+        self.output = nn.Linear(hidden_dim * 2, num_classes)  # *2 for bidirectional LSTM
 
     def forward(self, x):
         """
         x: (batch, seq_len, input_dim) - typically signal data
         """
-        #x = x.permute(0, 2, 1)  # Change to (batch, input_dim, seq_len) for Conv1d
-        x = self.cnn(x)  # Apply CNN
+        x = self.conv1(x)
+        x = torch.relu(x)
+        x = self.pool(x)
+
+        # Apply LayerNorm
+        x = self.conv2(x)
+        x = torch.relu(x)
+
         x = x.permute(0, 2, 1)  # Change back to (batch, seq_len, conv_out) for LSTM
 
+        x = torch.relu(self.fc(x))
         #x, _ = self.lstm(x)  # LSTM processes sequence
         x, _ = self.bigru(x)
-        x = self.fc(x)  # Output shape: (batch, seq_len, num_classes)
-        #return x
-        return F.log_softmax(x, dim=-1)
+        x = self.output(x)  # Output shape: (batch, seq_len, num_classes)
+        x = x.sum(dim=1)
+        return x
+        #return F.log_softmax(x, dim=-1)

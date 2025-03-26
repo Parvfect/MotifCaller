@@ -74,11 +74,12 @@ def sort_transcript_reduced_spacers(transcript):
     flag = False
     cycle_number = 0
 
-    for i in split_transcript:
+    for i in split_transcript[::-1]:
         if not i == ' ':
             if int(i) > 8:
                 if not i == cycle_number:
                     sorted_transcript
+                    # 9 for synthetic and 11 for empirical my guy
                     cycle_number = int(i) - 11
                 else:
                     continue
