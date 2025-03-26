@@ -79,8 +79,8 @@ def run_epoch(
         model_output = model(input_sequence)
 
         #model_output = model_output.permute(1, 0, 2)  # Assuming log probs are computed in network
-        #model_output = model_output.reshape(
-        #    model_output.shape[0] * model_output.shape[1], n_classes)
+        model_output = model_output.reshape(
+            model_output.shape[0] * model_output.shape[1], n_classes)
         
         model_output = F.log_softmax(model_output, dim=-1)
         

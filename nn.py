@@ -95,6 +95,6 @@ class NaiveCaller(nn.Module):
         #x, _ = self.lstm(x)  # LSTM processes sequence
         x, _ = self.bigru(x)
         x = self.output(x)  # Output shape: (batch, seq_len, num_classes)
-        x = x.sum(dim=1)
+        #x = x.sum(dim=1)
         return x
         #return F.log_softmax(x, dim=-1)
