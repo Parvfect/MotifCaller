@@ -23,7 +23,6 @@ import random
 from model_config import ModelConfig
 from training_monitoring import wandb_login, start_wandb_run
 import wandb
-from beam_search_decoder import beam_search_ctc
 from torch.nn.utils.rnn import pad_sequence
 import torch.nn.functional as F
 

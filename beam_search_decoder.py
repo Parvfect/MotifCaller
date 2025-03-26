@@ -1,6 +1,6 @@
 import numpy as np
 import heapq
-from torchaudio.models.decoder import ctc_decoder
+#from torchaudio.models.decoder import ctc_decoder
 
 
 def update_alignments(alignments, alignment_probs, top_tokens, top_probs, beam_width=3, blank_index=0):
@@ -75,9 +75,10 @@ def beam_search_ctc(prob_matrix, beam_width=3, blank=0, n_classes=17, return_ali
         return alignments
     return " ".join([str(i) for i in alignments[0]])
 
-
+"""
 def torch_ctc(n_classes, model_output, beam_width=5):
 
     labels = ["|"] + ["-"] + [str(i) for i in range(n_classes)]
     decoder = ctc_decoder(lexicon=None, tokens=labels, beam_size=beam_width)
     return decoder(model_output)
+"""

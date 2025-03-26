@@ -4,6 +4,7 @@ import torch.nn as nn
 from torch.nn import Conv1d, MaxPool1d, GRU, Linear, CTCLoss
 import torch.nn.functional as F
 
+
 class MotifCaller(nn.Module):
 
     def __init__(self, input_size, hidden_size, num_layers, output_size, dropout_rate=0.2):

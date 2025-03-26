@@ -9,6 +9,7 @@ import math
 import os
 import pickle
 
+
 def load_training_data(
     dataset_path=None, column_x='squiggle', column_y='motif_seq',
     sampling_rate: float = 1, payload=False, orientation=True):
