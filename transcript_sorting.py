@@ -79,7 +79,7 @@ def sort_transcript_reduced_spacers(transcript):
             if int(i) > 8:
                 if not i == cycle_number:
                     sorted_transcript
-                    cycle_number = int(i) - 11
+                    cycle_number = int(i) - 9
                 else:
                     continue
             else:

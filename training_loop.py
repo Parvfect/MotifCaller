@@ -69,7 +69,8 @@ def run_epoch(
         if windows:
            #print(model_output.shape)
            model_output = model_output.reshape(
-               model_output.shape[0] * model_output.shape[1], 1, model_config.n_classes)
+               model_output.shape[0] * model_output.shape[1],
+                1, model_config.n_classes)
            #print(model_output.shape)
 
         model_output_flattened = model_output.view(
@@ -142,7 +143,7 @@ def main(
     
     X, y = load_training_data(
         dataset_path=dataset_path, column_x='squiggle', column_y='motif_seq',
-        sampling_rate=sampling_rate)
+        sampling_rate=sampling_rate, orientation=True)
 
     if windows:
         X = data_preproc(
@@ -302,3 +303,9 @@ def main(
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         }, model_save_path)
+
+
+
+"""
+python process.py --normalize --no_windows --dataset_path data/synthetic/pickled_datasets/no_spacers_long.pkl --sampling_rate 0.02 --n_classes 9
+"""

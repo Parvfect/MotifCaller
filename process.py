@@ -29,7 +29,7 @@ parser.add_argument('--lr', type=float)
 parser.set_defaults(
     epochs=50, window_size=1024, window_step=800, sampling_rate=1.0,
     running_on_hpc=False, no_windows=False, dataset_path=None, hidden_size=128,
-    n_classes=17, dataset="", normalize=False, lr=0.001
+    n_classes=17, dataset="", normalize=False, lr=0.0001
     )
 
 args = parser.parse_args()
