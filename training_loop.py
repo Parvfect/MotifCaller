@@ -57,7 +57,8 @@ def run_epoch(
 
         else:
             if normalize_flag:
-                input_sequence = normalize([input_sequence], norm='l1')
+                input_sequence = normalize(
+                    [input_sequence], norm='max')
             
             input_sequence = torch.tensor(
                 input_sequence, dtype=torch.float32)
@@ -115,6 +116,7 @@ def run_epoch(
             #print(actual_transcript)
             print(sorted_greedy)
             print(sorted_actual)
+            print(input_sequence[0][0][:20])
 
         
     return {
@@ -170,6 +172,7 @@ def main(
         n_classes=n_classes, hidden_size=hidden_size, n_layers=n_layers).to(device)
     """
     model = NaiveCaller(num_classes=n_classes, hidden_dim=hidden_size)
+    #model = model.double()
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
     #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -307,5 +310,5 @@ def main(
 
 
 """
-python process.py --normalize --no_windows --dataset_path data/synthetic/pickled_datasets/no_spacers_long.pkl --sampling_rate 0.02 --n_classes 9
+python process.py --normalize --no_windows --dataset_path data/synthetic/pickled_datasets/larger_datasets/rc_large.pkl --sampling_rate 0.02 --n_classes 17
 """
