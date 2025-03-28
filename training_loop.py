@@ -111,12 +111,11 @@ def run_epoch(
 
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
-        if ind % 40 == 0 and not ind == 0:
+        if ind % 100 == 0 and not ind == 0:
             print(greedy_transcript)
             #print(actual_transcript)
             print(sorted_greedy)
             print(sorted_actual)
-            print(input_sequence[0][0][:20])
 
         
     return {
