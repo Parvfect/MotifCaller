@@ -74,7 +74,7 @@ def sort_transcript_reduced_spacers(transcript):
     flag = False
     cycle_number = 0
 
-    for i in split_transcript:
+    for i in split_transcript[::-1]:
         if not i == ' ':
             if int(i) > 8:
                 if not i == cycle_number:
@@ -83,6 +83,9 @@ def sort_transcript_reduced_spacers(transcript):
                 else:
                     continue
             else:
+                if cycle_number >= len(sorted_transcript):
+                    print("Error here")
+                    continue
                 sorted_transcript[cycle_number].append(int(i))
 
     return sorted_transcript
