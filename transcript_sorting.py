@@ -84,8 +84,7 @@ def sort_transcript_reduced_spacers(transcript):
                     continue
             else:
                 if cycle_number >= len(sorted_transcript):
-                    print("Error here")
-                    continue
+                    cycle_number -= 2
                 sorted_transcript[cycle_number].append(int(i))
 
     return sorted_transcript
