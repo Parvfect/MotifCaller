@@ -21,9 +21,10 @@ def load_training_data(
 
     # Filtering out rc
     if orientation:
-        print(len(dataset)) 
-        dataset = dataset.loc[dataset['orientation'].str.startswith('+')]
-        print(f"Selected {len(dataset)} forward reads")
+        if 'orientation' in dataset.columns:
+            print(len(dataset)) 
+            dataset = dataset.loc[dataset['orientation'].str.startswith('+')]
+            print(f"Selected {len(dataset)} forward reads")
 
     n = int(len(dataset) * sampling_rate)
     dataset = dataset.sample(n=n, random_state=1)
