@@ -101,8 +101,8 @@ def run_epoch(
         greedy_result = decoder(model_output_flattened)
         greedy_transcript = " ".join(greedy_result)
         actual_transcript = get_actual_transcript(y[ind])
-        sorted_greedy = sort_transcript_reduced_spacers(greedy_transcript)
-        sorted_actual = sort_transcript_reduced_spacers(actual_transcript)
+        sorted_greedy = sort_transcript(greedy_transcript)
+        sorted_actual = sort_transcript(actual_transcript)
         motifs_found, motif_errs = evaluate_cycle_prediction(
             sorted_greedy, sorted_actual)
         edit_distance_ratios.append(ratio(greedy_transcript, actual_transcript))
@@ -112,10 +112,10 @@ def run_epoch(
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
         if ind % 100 == 0 and not ind == 0:
-            print(greedy_transcript)
-            #print(actual_transcript)
-            print(sorted_greedy)
-            print(sorted_actual)
+            print(f"\nGreedy Transcript \n{greedy_transcript}")
+            print(f"Actual Transcript \n{actual_transcript}")
+            print(f"Cycle Greedy \n{sorted_greedy}")
+            print(f"Cycle Actual \n{sorted_actual}")
 
         
     return {
