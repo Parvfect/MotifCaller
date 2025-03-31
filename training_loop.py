@@ -165,11 +165,18 @@ def run_epoch_batched(
     y = [y[ind] for ind in indices]
 
     for ind in tqdm(range(0, n_training_samples, batch_size)):
+
+        if n_training_samples - ind < batch_size:
+            continue
         
         if train:
             optimizer.zero_grad()
 
-        input_seqs = X[ind: ind + batch_size]
+        if normalize_flag:
+            input_seqs = [
+                normalize([X[k]], norm='max').flatten() for k in range(ind, ind + batch_size)]
+        else:
+            input_seqs = X[ind: ind + batch_size]
         target_seqs = y[ind: ind + batch_size]
 
         input_seqs = pad_sequence([torch.tensor(
