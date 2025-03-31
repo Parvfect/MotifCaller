@@ -9,9 +9,10 @@ import math
 import os
 import pickle
 
+
 def load_training_data(
     dataset_path=None, column_x='squiggle', column_y='motif_seq',
-    sampling_rate: float = 1, payload=False, orientation=True):
+    sampling_rate: float = 1.0, payload=False, orientation=True):
 
     if not dataset_path:
         dataset_path = os.path.join(
@@ -26,14 +27,20 @@ def load_training_data(
             dataset = dataset.loc[dataset['orientation'].str.startswith('+')]
             print(f"Selected {len(dataset)} forward reads")
 
-    n = int(len(dataset) * sampling_rate)
-    dataset = dataset.sample(n=n, random_state=1)
-    
     X = dataset[column_x].to_numpy().tolist()
     y = dataset[column_y].to_numpy()
 
+    n = int(len(X) * sampling_rate)
+    if sampling_rate < 1.0:
+        sampling_indices = [np.random.randint(len(X) - 1) for i in range(n)]
+        X = [X[ind] for ind in sampling_indices]
+        y = [y[ind] for ind in sampling_indices]
+
     if payload: 
-        payload = dataset['Payload_Sequence'].to_numpy()
+        payload = dataset['payload_seq'].to_numpy()
+
+        if sampling_rate < 1.0:
+            payload = [payload[ind] for ind in sampling_indices]
         return X, y, payload
       
     return X, y

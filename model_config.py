@@ -5,7 +5,7 @@ class ModelConfig():
     def __init__(
             self, n_classes, hidden_size, window_size, window_step,
             train_epochs, device, model_save_path, write_path, dataset, windows,
-            sampling_rate):
+            sampling_rate, batch_size):
         self.n_classes = n_classes
         self.hidden_size = hidden_size
         self.windows = windows
@@ -22,6 +22,7 @@ class ModelConfig():
         self.dataset = dataset
         self.windows = windows
         self.sampling_rate = sampling_rate
+        self.batch_size = batch_size
 
 
     def __dict__(self):
@@ -35,5 +36,6 @@ class ModelConfig():
             "dataset": self.dataset,
             "device": self.device,
             "model_save_path": self.model_save_path,
-            "write_path": self.write_path
+            "write_path": self.write_path,
+            "batch_size": self.batch_size
         }

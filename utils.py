@@ -275,3 +275,10 @@ def load_model(model_path, device, n_classes, hidden_size=128):
 
     model = model.to(device)
     return model
+
+"""
+def align(seqA, seqB):
+    aligner = Align.PairwiseAligner()
+    aligner.mode = "local"
+    return aligner.align(seqA, seqB)[0]
+"""
