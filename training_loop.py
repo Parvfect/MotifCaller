@@ -215,22 +215,26 @@ def run_epoch_batched(
         losses[int(ind / batch_size) - 1] = loss.item()
         model_output = model_output.permute(1, 0, 2)  
        
-        
-        greedy_result = decoder(model_output[0])
-        greedy_transcript = " ".join(greedy_result)
-        actual_transcript = get_actual_transcript(y[ind])
-        sorted_greedy = sort_transcript(greedy_transcript)
-        sorted_actual = sort_transcript(actual_transcript)
-        motifs_found, motif_errs = evaluate_cycle_prediction(
-            sorted_greedy, sorted_actual)
-        edit_distance_ratios.append(ratio(greedy_transcript, actual_transcript))
-        motifs_found_arr.append(motifs_found)
-        motif_errs_arr.append(motif_errs)
+        # Iterating over batch size to get all sequence predictions
+        for k in range(3):
+            indices = np.random.permutation(batch_size)
+            greedy_result = decoder(model_output[indices[k]])
+            greedy_transcript = " ".join(greedy_result)
+            actual_transcript = get_actual_transcript(
+                y[ind + indices[k]])
+            sorted_greedy = sort_transcript(greedy_transcript)
+            sorted_actual = sort_transcript(actual_transcript)
+            motifs_found, motif_errs = evaluate_cycle_prediction(
+                sorted_greedy, sorted_actual)
+            edit_distance_ratios.append(ratio(
+                greedy_transcript, actual_transcript))
+            motifs_found_arr.append(motifs_found)
+            motif_errs_arr.append(motif_errs)
        
 
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
-        if int(ind / batch_size) % 20 == 0 and not ind == 0:
+        if int(ind / batch_size) % 50 == 0 and not ind == 0:
             print(f"\nGreedy Transcript \n{greedy_transcript}")
             print(f"Actual Transcript \n{actual_transcript}")
             print(f"Cycle Greedy \n{sorted_greedy}")
@@ -450,9 +454,3 @@ def main(
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         }, model_save_path)
-
-
-
-"""
-python process.py --normalize --no_windows --dataset_path data/synthetic/pickled_datasets/larger_datasets/rc_large.pkl --sampling_rate 0.02 --n_classes 17
-"""
