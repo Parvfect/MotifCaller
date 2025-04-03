@@ -152,6 +152,7 @@ def run_epoch_batched(
     display_iterations = int(n_training_samples / 2)
     device = model_config.device
 
+
     if train:
         model.train()
     else:
@@ -214,7 +215,7 @@ def run_epoch_batched(
         
         losses[int(ind / batch_size) - 1] = loss.item()
         model_output = model_output.permute(1, 0, 2)  
-       
+
         # Iterating over batch size to get all sequence predictions
         for k in range(3):
             indices = np.random.permutation(batch_size)
