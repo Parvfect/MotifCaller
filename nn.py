@@ -70,10 +70,10 @@ class NaiveCaller(nn.Module):
         self.cnn = nn.Sequential(
             nn.Conv1d(input_dim, 32, kernel_size=3, stride=1, dilation=1),  
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=4, stride=2),
+            nn.MaxPool1d(kernel_size=4, stride=1),
             nn.Conv1d(32, 64, kernel_size=3, stride=1, dilation=2),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=2),
+            nn.MaxPool1d(kernel_size=5, stride=1),
             nn.Conv1d(64, 128, kernel_size=5, stride=1, dilation=2),
             nn.ReLU(),
             nn.Conv1d(128, conv_out, kernel_size=5, stride=1, dilation=4),
