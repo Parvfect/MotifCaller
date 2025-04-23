@@ -268,7 +268,7 @@ def main(
     
     X, y = load_training_data(
         dataset_path=dataset_path, column_x='squiggle', column_y='motif_seq',
-        sampling_rate=sampling_rate, orientation=True)
+        sampling_rate=sampling_rate, orientation=False)
 
     if windows:
         X = data_preproc(

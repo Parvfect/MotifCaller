@@ -62,65 +62,98 @@ class MotifCaller(nn.Module):
 
 class NaiveCaller(nn.Module):
     def __init__(self, input_dim=1, conv_out=128, hidden_dim=128, num_layers=3, num_classes=5):
+        
         super(NaiveCaller, self).__init__()
-
-        
-        
-        # Convolutional feature extractor
         self.cnn = nn.Sequential(
             nn.Conv1d(input_dim, 32, kernel_size=3, stride=1, dilation=1),  
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=4, stride=2),
+            nn.MaxPool1d(kernel_size=4, stride=3),
             nn.Conv1d(32, 64, kernel_size=3, stride=1, dilation=2),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=2),
-            nn.Conv1d(64, 128, kernel_size=5, stride=1, dilation=2),
+            nn.MaxPool1d(kernel_size=5, stride=3),
+            nn.Conv1d(64, 128, kernel_size=5, stride=2, dilation=2),
             nn.ReLU(),
-            nn.Conv1d(128, conv_out, kernel_size=5, stride=1, dilation=4),
+            nn.Conv1d(128, conv_out, kernel_size=5, stride=2, dilation=4),
             nn.ReLU()
             #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
         )
-        
-        
-        """
-        # Convolutional feature extractor
-        self.cnn = nn.Sequential(
-            nn.Conv1d(input_dim, 4, kernel_size=5, stride=1),  
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=3),
-            nn.Conv1d(4, 16, kernel_size=5, stride=2),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=3),
-            nn.Conv1d(16, 64, kernel_size=5, stride=2),
-            nn.ReLU(),
-            nn.Conv1d(64, conv_out, kernel_size=5, stride=2),
-            nn.ReLU()
-            #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
-        )
-        
-        
-        # BiLSTM for sequential modeling
-        self.lstm = nn.LSTM(conv_out, hidden_dim, num_layers, 
-                            batch_first=True, bidirectional=True, dropout=0.3)
-        """
 
         self.bigru = GRU(
             input_size=conv_out, hidden_size=hidden_dim, num_layers=num_layers,
             batch_first=True, bidirectional=True, dropout=0.2)
         
-        # Linear layer to output base probabilities
-        self.fc = nn.Linear(hidden_dim * 2, num_classes)  # *2 for bidirectional LSTM
+        self.fc = nn.Linear(hidden_dim * 2, num_classes) 
 
     def forward(self, x):
-        """
-        x: (batch, seq_len, input_dim) - typically signal data
-        """
-        #x = x.permute(0, 2, 1)  # Change to (batch, input_dim, seq_len) for Conv1d
-        x = self.cnn(x)  # Apply CNN
-        x = x.permute(0, 2, 1)  # Change back to (batch, seq_len, conv_out) for LSTM
-
-        #x, _ = self.lstm(x)  # LSTM processes sequence
+        
+        x = self.cnn(x)
+        x = x.permute(0, 2, 1)
         x, _ = self.bigru(x)
-        x = self.fc(x)  # Output shape: (batch, seq_len, num_classes)
-        #return x
+        x = self.fc(x)
+        return F.log_softmax(x, dim=-1)
+    
+
+class CallerSynthetic(nn.Module):
+    def __init__(self, input_dim=1, conv_out=128, hidden_dim=256, num_layers=3, num_classes=17):
+        
+        super(NaiveCaller, self).__init__()
+        self.cnn = nn.Sequential(
+            nn.Conv1d(input_dim, 32, kernel_size=3, stride=1, dilation=1),  
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4, stride=3),
+            nn.Conv1d(32, 64, kernel_size=3, stride=1, dilation=2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=5, stride=5),
+            nn.Conv1d(64, 128, kernel_size=5, stride=2, dilation=2),
+            nn.ReLU(),
+            nn.Conv1d(128, conv_out, kernel_size=5, stride=1, dilation=4),
+            nn.ReLU()
+            #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
+        )
+
+        self.bigru = GRU(
+            input_size=conv_out, hidden_size=hidden_dim, num_layers=num_layers,
+            batch_first=True, bidirectional=True, dropout=0.2)
+        
+        self.fc = nn.Linear(hidden_dim * 2, num_classes) 
+
+    def forward(self, x):
+        
+        x = self.cnn(x)
+        x = x.permute(0, 2, 1)
+        x, _ = self.bigru(x)
+        x = self.fc(x)
+        return F.log_softmax(x, dim=-1)
+    
+
+
+class CallerEmpirical(nn.Module):
+    def __init__(self, input_dim=1, conv_out=128, hidden_dim=256, num_layers=3, num_classes=19):
+        super(NaiveCaller, self).__init__()
+        self.cnn = nn.Sequential(
+            nn.Conv1d(input_dim, 32, kernel_size=3, stride=1, dilation=1),  
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=4, stride=3),
+            nn.Conv1d(32, 64, kernel_size=3, stride=1, dilation=2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=5, stride=3),
+            nn.Conv1d(64, 128, kernel_size=5, stride=2, dilation=2),
+            nn.ReLU(),
+            nn.Conv1d(128, conv_out, kernel_size=5, stride=2, dilation=4),
+            nn.ReLU()
+            #nn.MaxPool1d(kernel_size=5, stride=4)  # Reduce sequence length
+        )
+
+        self.bigru = GRU(
+            input_size=conv_out, hidden_size=hidden_dim, num_layers=num_layers,
+            batch_first=True, bidirectional=True, dropout=0.2)
+        
+        self.fc = nn.Linear(hidden_dim * 2, num_classes) 
+
+    def forward(self, x):
+        
+        x = self.cnn(x)
+        x = x.permute(0, 2, 1)
+        x, _ = self.bigru(x)
+        x = self.fc(x)
         return F.log_softmax(x, dim=-1)

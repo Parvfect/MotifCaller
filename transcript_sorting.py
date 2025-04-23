@@ -38,9 +38,7 @@ def sort_transcript(transcript):
                     if split_transcript[i+1] > 10:
                         cycle_number = split_transcript[i+1] - 11
                         cycles[cycle_number].append(split_transcript[i])   
-
-    return cycles
-
+    return [list(set(i)) for i in cycles]
 
 
 def create_reduced_spacer_transcript(motif_seq: List[int]) -> List[int]:

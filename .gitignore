@@ -12,3 +12,5 @@ wandb_api_key.txt
 *.bam
 *.csv
 *.json
+**/results
+**/prod

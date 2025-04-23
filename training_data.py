@@ -30,6 +30,12 @@ def load_training_data(
     X = dataset[column_x].to_numpy().tolist()
     y = dataset[column_y].to_numpy()
 
+    if column_y == 'base_seq':
+        base_map = {"A": 0, "C": 1, "G": 2, "T": 3}
+        base_seq = dataset[column_y].tolist()
+        base_seq_ = [[base_map[i] for i in j] for j in base_seq]
+        y = base_seq_
+
     n = int(len(X) * sampling_rate)
     if sampling_rate < 1.0:
         sampling_indices = [np.random.randint(len(X) - 1) for i in range(n)]
