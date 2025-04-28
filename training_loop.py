@@ -178,32 +178,27 @@ def run_epoch_batched(
                 normalize([X[k]], norm='max').flatten() for k in range(ind, ind + batch_size)]
         else:
             input_seqs = X[ind: ind + batch_size]
+
         target_seqs = y[ind: ind + batch_size]
 
         input_seqs = pad_sequence([torch.tensor(
                     i, dtype=torch.float32) for i in input_seqs], batch_first=True)
         target_seqs = pad_sequence([torch.tensor(
-                    i, dtype=torch.float32) for i in target_seqs], batch_first=True)
+                    i, dtype=torch.float32) for i in target_seqs], batch_first=True).to(device)
         
-        input_seqs = input_seqs.view(input_seqs.shape[0], 1, input_seqs.shape[1])
+        input_seqs = input_seqs.view(input_seqs.shape[0], 1, input_seqs.shape[1]).to(device)
         
         pad_length_input = input_seqs.shape[2]
         n_samples = input_seqs.shape[0]
 
         pad_length_target = target_seqs.shape[1]
 
-        input_seqs = input_seqs.to(device)
-        target_seqs = target_seqs.to(device)
-        input_lengths = input_lengths.to(device)
-        label_lengths = label_lengths.to(device)
-
         model_output = model(input_seqs)
-        model_output = model_output.permute(1, 0, 2)  # Assuming log probs are computed in network
-        
+        model_output = model_output.permute(1, 0, 2)  # Assuming log probs are computed in network        
         
         n_timesteps = model_output.shape[0]
-        input_lengths = torch.tensor([n_timesteps for i in range(n_samples)])
-        label_lengths = torch.tensor([len(y[ind + i]) for i in range(n_samples)])
+        input_lengths = torch.tensor([n_timesteps for i in range(n_samples)]).to(device)
+        label_lengths = torch.tensor([len(y[ind + i]) for i in range(n_samples)]).to(device)
         
         loss = ctc(
             log_probs=model_output, targets=target_seqs, input_lengths=input_lengths, target_lengths=label_lengths)
