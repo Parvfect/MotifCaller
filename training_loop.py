@@ -214,7 +214,8 @@ def run_epoch_batched(
             optimizer.step()
         
         losses[int(ind / batch_size) - 1] = loss.item()
-        model_output = model_output.permute(1, 0, 2)  
+        model_output = model_output.permute(1, 0, 2).detach().cpu()
+        torch.cuda.empty_cache()
 
         # Iterating over batch size to get all sequence predictions
         for k in range(3):
