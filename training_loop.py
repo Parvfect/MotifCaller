@@ -192,6 +192,10 @@ def run_epoch_batched(
 
         pad_length_target = target_seqs.shape[1]
 
+        input_seqs = input_seqs.to(device)
+        target_seqs = target_seqs.to(device)
+        input_lengths = input_lengths.to(device)
+        label_lengths = label_lengths.to(device)
 
         model_output = model(input_seqs)
         model_output = model_output.permute(1, 0, 2)  # Assuming log probs are computed in network
@@ -217,22 +221,23 @@ def run_epoch_batched(
         model_output = model_output.permute(1, 0, 2).detach().cpu()
         torch.cuda.empty_cache()
 
-        # Iterating over batch size to get all sequence predictions
-        for k in range(3):
-            indices = np.random.permutation(batch_size)
-            greedy_result = decoder(model_output[indices[k]])
-            greedy_transcript = " ".join(greedy_result)
-            actual_transcript = get_actual_transcript(
-                y[ind + indices[k]])
-            sorted_greedy = sort_transcript(greedy_transcript)
-            sorted_actual = sort_transcript(actual_transcript)
-            motifs_found, motif_errs = evaluate_cycle_prediction(
-                sorted_greedy, sorted_actual)
-            edit_distance_ratios.append(ratio(
-                greedy_transcript, actual_transcript))
-            motifs_found_arr.append(motifs_found)
-            motif_errs_arr.append(motif_errs)
-       
+        with torch.no_grad():
+            # Iterating over batch size to get all sequence predictions
+            for k in range(3):
+                indices = np.random.permutation(batch_size)
+                greedy_result = decoder(model_output[indices[k]])
+                greedy_transcript = " ".join(greedy_result)
+                actual_transcript = get_actual_transcript(
+                    y[ind + indices[k]])
+                sorted_greedy = sort_transcript(greedy_transcript)
+                sorted_actual = sort_transcript(actual_transcript)
+                motifs_found, motif_errs = evaluate_cycle_prediction(
+                    sorted_greedy, sorted_actual)
+                edit_distance_ratios.append(ratio(
+                    greedy_transcript, actual_transcript))
+                motifs_found_arr.append(motifs_found)
+                motif_errs_arr.append(motif_errs)
+        
 
         #print(f"\n{ratio_labels} aah {len(y[ind])}")
         
@@ -295,7 +300,7 @@ def main(
     model = MotifCaller(
         n_classes=n_classes, hidden_size=hidden_size, n_layers=n_layers).to(device)
     """
-    model = NaiveCaller(num_classes=n_classes, hidden_dim=hidden_size)
+    model = NaiveCaller(num_classes=n_classes, hidden_dim=hidden_size).to(device)
     #model = model.double()
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
