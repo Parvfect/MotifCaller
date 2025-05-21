@@ -29,10 +29,10 @@ if __name__ == '__main__':
 
     if fast5_path:
         print("Initialising model and reading data\n")
-        squiggles, read_ids, model, device, greedy_decoder = model_init(fast5_path=fast5_path)
+        squiggles, read_ids, forward_model, reverse_model, device, greedy_decoder = model_init(fast5_path=fast5_path)
         print("Starting inference\n")
         sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr = model_inference(
-            data_arr=squiggles, read_ids=read_ids, model=model, device=device, greedy_decoder=greedy_decoder
+            data_arr=squiggles, read_ids=read_ids, forward_model=forward_model, reverse_model=reverse_model, device=device, greedy_decoder=greedy_decoder
         )
         print("Saving results\n")
         save_inference_to_csv(sorted_greedy_transcripts=sorted_greedy_transcripts, greedy_transcripts_arr=greedy_transcripts_arr, read_ids_arr=read_ids_arr, savepath=savepath, fast5_filepath=fast5_path)

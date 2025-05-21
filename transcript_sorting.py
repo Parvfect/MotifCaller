@@ -22,21 +22,21 @@ def sort_transcript(transcript):
             # finding the spacers - only for payload cycles
             if i > 0:
                 # Checking for Back Spacer
-                if split_transcript[i-1] > 10:
-                    cycle_number = split_transcript[i-1] - 11
+                if split_transcript[i-1] > 8:
+                    cycle_number = split_transcript[i-1] - 9
                     cycles[cycle_number].append(split_transcript[i])
 
                 # Checking for Forward Spacer
                 elif i < len(split_transcript) - 1:
-                    if split_transcript[i+1] > 10:
-                        cycle_number = split_transcript[i+1] - 11
+                    if split_transcript[i+1] > 8:
+                        cycle_number = split_transcript[i+1] - 9
                         cycles[cycle_number].append(split_transcript[i])
 
             else:
                 if i < len(split_transcript) - 1:
                     # Checking for Forward Spacer
-                    if split_transcript[i+1] > 10:
-                        cycle_number = split_transcript[i+1] - 11
+                    if split_transcript[i+1] > 8:
+                        cycle_number = split_transcript[i+1] - 9
                         cycles[cycle_number].append(split_transcript[i])   
     return [list(set(i)) for i in cycles]
 

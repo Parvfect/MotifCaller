@@ -5,7 +5,7 @@ import os
 from tqdm import tqdm
 from sklearn.preprocessing import normalize
 from torch.nn.utils.rnn import pad_sequence
-from utils import sort_transcript
+from utils import sort_transcript, detect_reverse_oriented_read
 import pandas as pd
 from typing import List
 from fast5_input import extract_fast5_data_from_file
@@ -15,10 +15,21 @@ from typing import List, Tuple
 n_classes = 19
 hidden_size = 256
 
+def load_model(model_path, device):
+    if device == torch.device('cpu'):
+        checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
+    else:
+        checkpoint = torch.load(model_path)
+
+    model = CallerEmpirical(num_classes=n_classes, hidden_dim=hidden_size)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    return model
+
 def model_init(fast5_path: str):
 
     squiggles, read_ids = extract_fast5_data_from_file(fast5_filepath=fast5_path)
-    model_path = 'model.pth'
+    forward_model_path = 'forward_model.pth'
+    reverse_model_path = 'mixed_256.pth'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     #device = torch.device('cpu')
     print(f"Running on {device}")
@@ -26,23 +37,14 @@ def model_init(fast5_path: str):
     # Initialising decoder
     greedy_decoder = GreedyCTCDecoder(n_classes=19)
 
-    model = CallerEmpirical(num_classes=n_classes, hidden_dim=hidden_size)
-        
-    # Loading model from checkpoint
-    if device == torch.device('cpu'):
-        checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
-    else:
-        checkpoint = torch.load(model_path)
-        
-    model.load_state_dict(checkpoint['model_state_dict'])
+    forward_model = load_model(forward_model_path, device=device)
+    reverse_model = load_model(reverse_model_path, device=device)
 
-    model = model.to(device)
-
-    return squiggles, read_ids, model, device, greedy_decoder
+    return squiggles, read_ids, forward_model, reverse_model, device, greedy_decoder
 
 def model_inference(
         data_arr: List[List[int]], read_ids: List[str],
-        model: torch.nn, device: torch.device,
+        forward_model: torch.nn, reverse_model: torch.nn, device: torch.device,
         greedy_decoder: GreedyCTCDecoder) -> Tuple[List[List[int]], List[str], List[str]]:
 
     greedy_transcripts_arr = []
@@ -53,15 +55,16 @@ def model_inference(
 
     print(f"Inference on {n_training_samples} squiggles")
 
-    batch_size = 8
-    model = model.to(device)
+    batch_size = 5
+    forward_model.to(device)
+    reverse_model.to(device)
 
     with torch.no_grad():
         for ind in tqdm(range(0, n_training_samples, batch_size)):
 
             if n_training_samples - ind < batch_size:
-                # Add random seqs to the end and get an output still
-                continue
+                batch_size = n_training_samples - ind - 1
+                #continue
             
             input_seqs = [
                 normalize([data_arr[k]], norm='max').flatten() for k in range(ind, ind + batch_size)]
@@ -73,23 +76,34 @@ def model_inference(
             input_seqs = input_seqs.view(input_seqs.shape[0], 1, input_seqs.shape[1])
             input_seqs = input_seqs.to(device)
 
-            try:
-                model_output = model(input_seqs)
-                if device.type == 'cuda':
-                    model_output = model_output.cpu()
-                
-                for k in range(batch_size):
-                    greedy_result = greedy_decoder(model_output[k])
-                    greedy_transcript = " ".join(greedy_result)
-                    sorted_greedy = sort_transcript(greedy_transcript)
-                    greedy_transcripts_arr.append(greedy_transcript)
-                    sorted_greedy_transcripts.append(sorted_greedy)
-                torch.cuda.empty_cache()
-                
-                read_ids_arr.extend(read_ids[ind: ind + batch_size])
+            #try:
+            forward_model_output = forward_model(input_seqs)
+            reverse_model_output = reverse_model(input_seqs)
+            
+            for k in range(batch_size):
+                greedy_result_forward = greedy_decoder(
+                    forward_model_output[k])
+                greedy_result_reverse = greedy_decoder(
+                    reverse_model_output[k]
+                )
 
-            except Exception as e:
-                print("Ignoring error {e} and continuing inference")
-                continue
+                if detect_reverse_oriented_read(greedy_result_reverse):
+                    greedy_transcript = " ".join(greedy_result_reverse)
+                else:
+                    greedy_transcript = " ".join(greedy_result_forward)
+
+                sorted_greedy = sort_transcript(greedy_transcript)
+                greedy_transcripts_arr.append(greedy_transcript)
+                sorted_greedy_transcripts.append(sorted_greedy)
+
+            torch.cuda.empty_cache()
+            if device == torch.device('cuda'):
+                del input_seqs
+            
+            read_ids_arr.extend(read_ids[ind: ind + batch_size])
+
+            #except Exception as e:
+            #    print(f"Ignoring error {e} and continuing inference")
+            #    continue
 
     return sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr

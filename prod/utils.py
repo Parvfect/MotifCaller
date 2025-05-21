@@ -61,3 +61,26 @@ def get_motifs_identified(sorted_payload_transcript: List[List[int]]):
         cycle_number += 1
 
     return motifs_found
+
+def detect_reverse_oriented_read(transcript_reverse_model):
+
+    # Remove payloads, make set, and check that each spacer motif is increasing
+    no_payload_transcript = [
+        int(i) for i in transcript_reverse_model if int(i) > 8]
+    
+    if len(no_payload_transcript) == 0:
+        return False
+
+    first_spacer = no_payload_transcript[0]
+    flag = False
+    for j in no_payload_transcript[1:]:
+        if not j == first_spacer:
+            if j < first_spacer:
+                flag = True
+            else:
+                flag = False
+            break
+        
+    return flag
+
+    

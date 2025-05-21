@@ -9,7 +9,6 @@ class CallerEmpirical(nn.Module):
             self, input_dim=1, conv_out=128, hidden_dim=256, num_layers=3, num_classes=19):
         
         super(CallerEmpirical, self).__init__()
-        
         self.cnn = nn.Sequential(
             nn.Conv1d(input_dim, 32, kernel_size=3, stride=1, dilation=1),  
             nn.ReLU(),
