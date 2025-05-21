@@ -268,8 +268,8 @@ def main(
             running_on_hpc=running_on_hpc)
     
     X, y = load_training_data(
-        dataset_path=dataset_path, column_x='squiggle', column_y='motif_seq',
-        sampling_rate=sampling_rate, orientation=False)
+        dataset_path=dataset_path, column_x='squiggle', column_y='edit_spacer_seq',
+        sampling_rate=sampling_rate, orientation=True)
 
     if windows:
         X = data_preproc(

@@ -24,8 +24,8 @@ def load_training_data(
     if orientation:
         if 'orientation' in dataset.columns:
             print(len(dataset)) 
-            dataset = dataset.loc[(dataset['orientation'].str.startswith('-')) & (dataset['payload_motifs_found'] > 2)]
-            print(f"Selected {len(dataset)} reverse reads")
+            dataset = dataset.loc[(dataset['orientation'].str.startswith('+')) & (dataset['edit_motifs_found'] > 7)]
+            print(f"Selected {len(dataset)} forward reads")
 
     X = dataset[column_x].to_numpy().tolist()
     y = dataset[column_y].to_numpy()
