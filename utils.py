@@ -282,3 +282,18 @@ def align(seqA, seqB):
     aligner.mode = "local"
     return aligner.align(seqA, seqB)[0]
 """
+
+
+def evaluate_prediction(prediction, original):
+    """Prediction first, original second"""
+
+    found = 0
+    err = 0
+    for i, j in zip(prediction, original):
+        for k in range(len(i)):
+            if i[k] in j:
+                found += 1
+            else:
+                err += 1
+
+    return found, err
