@@ -269,7 +269,7 @@ def main(
     
     X, y = load_training_data(
         dataset_path=dataset_path, column_x='squiggle', column_y='edit_spacer_seq',
-        sampling_rate=sampling_rate, orientation=False)
+        sampling_rate=sampling_rate, orientation=True)
 
     if windows:
         X = data_preproc(
@@ -296,16 +296,12 @@ def main(
         n_classes=n_classes, hidden_size=hidden_size, n_layers=n_layers).to(device)
     """
     model = NaiveCaller(num_classes=n_classes, hidden_dim=hidden_size).to(device)
-    #model = model.double()
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    #    optimizer, 'min', patience=10, threshold=0.0001)
 
     labels_int = np.arange(n_classes).tolist()
     labels = [f"{i}" for i in labels_int]  # Tokens to be fed into greedy decoder
     greedy_decoder = GreedyCTCDecoder(labels=labels)
-
 
     model_config = ModelConfig(
         n_classes=n_classes, hidden_size=hidden_size, window_size=window_size,
