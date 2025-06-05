@@ -55,7 +55,7 @@ def model_inference(
 
     print(f"Inference on {n_training_samples} squiggles")
 
-    batch_size = 5
+    batch_size = 8
     forward_model.to(device)
     reverse_model.to(device)
 
@@ -78,19 +78,19 @@ def model_inference(
 
             #try:
             forward_model_output = forward_model(input_seqs)
-            reverse_model_output = reverse_model(input_seqs)
+            #reverse_model_output = reverse_model(input_seqs)
             
             for k in range(batch_size):
                 greedy_result_forward = greedy_decoder(
                     forward_model_output[k])
-                greedy_result_reverse = greedy_decoder(
-                    reverse_model_output[k]
-                )
+                #greedy_result_reverse = greedy_decoder(
+                #    reverse_model_output[k]
+                #)
 
-                if detect_reverse_oriented_read(greedy_result_reverse):
-                    greedy_transcript = " ".join(greedy_result_reverse)
-                else:
-                    greedy_transcript = " ".join(greedy_result_forward)
+                #if detect_reverse_oriented_read(greedy_result_reverse):
+                #    greedy_transcript = " ".join(greedy_result_reverse)
+                #else:
+                greedy_transcript = " ".join(greedy_result_forward)
 
                 sorted_greedy = sort_transcript(greedy_transcript)
                 greedy_transcripts_arr.append(greedy_transcript)

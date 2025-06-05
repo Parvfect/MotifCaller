@@ -21,6 +21,23 @@ class GreedyCTCDecoder(nn.Module):
         indices = [i for i in indices if i != self.blank]
         joined = " ".join([self.labels[i] for i in indices])
         return joined.replace("|", " ").strip().split()
+    
+
+    def forward_2(self, emission, prob_threshold):
+        probs = torch.exp(emission)  # shape: (T, C)
+        max_probs, indices = torch.max(probs, dim=-1)  # get max prob and corresponding index at each timestep
+
+        # Apply probability threshold
+        indices = torch.where(max_probs >= prob_threshold, indices, torch.tensor(self.blank))
+
+        # Collapse repeated tokens and remove blanks
+        indices = torch.unique_consecutive(indices, dim=-1)
+        indices = [i for i in indices if i != self.blank]
+
+        # Convert to label string
+        joined = " ".join([self.labels[i] for i in indices])
+        return joined.replace("|", " ").strip().split()
+
 
 """ Ignoring beam decoder for now
 def torch_ctc(n_classes, model_output, beam_width=5, metrics=False):
