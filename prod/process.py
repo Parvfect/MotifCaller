@@ -53,8 +53,17 @@ if __name__ == '__main__':
                     data_arr=squiggles, read_ids=read_ids, forward_model=forward_model, reverse_model=reverse_model, device=device, greedy_decoder=greedy_decoder
                 )
                 print("Saving results\n")
-                save_inference_to_csv(sorted_greedy_transcripts=sorted_greedy_transcripts, greedy_transcripts_arr=greedy_transcripts_arr, read_ids_arr=read_ids_arr, savepath=savepath, fast5_filepath=file[:-6])
+                save_inference_to_csv(sorted_greedy_transcripts=sorted_greedy_transcripts, greedy_transcripts_arr=greedy_transcripts_arr, read_ids_arr=read_ids_arr, savepath=savepath, fast5_filepath=file)
 
     else:
         print("No fast5 path provided!")
         exit()
+
+
+
+#PBS -l select=1:ncpus=1:mem=100gb:ngpus=1:gpu_type=RTX6000
+#PBS -l walltime=40:00:00
+#PBS -N gpu_emp
+
+module load anaconda3/personal
+source activate base
