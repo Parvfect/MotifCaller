@@ -17,15 +17,26 @@ def load_training_data(
     if not dataset_path:
         dataset_path = os.path.join(
             os.environ['HOME'], "empirical_train_dataset_v5_payload_seq.pkl")
-        
-    dataset = pd.read_pickle(dataset_path)
+
+    forward_path = 'datasets/motifcaller/empirical/edit_train_filtered_forward.pkl'
+    reverse_path = 'datasets/motifcaller/empirical/edit_train_filtered_reverse.pkl'
+    forward_dataset_path = os.path.join(os.environ["HOME"], forward_path)
+    reverse_dataset_path = os.path.join(os.environ['HOME'], reverse_path)
+
+    forward_dataset = pd.read_pickle(forward_dataset_path)
+    reverse_dataset = pd.read_pickle(reverse_dataset_path)
+
+    dataset = pd.concat([forward_dataset, reverse_dataset])
+
+    #dataset = pd.read_pickle(dataset_path)
 
     # Filtering out rc
     if orientation:
         #if 'orientation' in dataset.columns:
         #print(len(dataset))
-        dataset[column_y] = dataset[column_y].apply(lambda x: x[::-1])
-        print(f"Selected {len(dataset)} reverse reads")
+        dataset = dataset.loc[dataset['strand'].str.startswith('+')]
+        #dataset[column_y] = dataset[column_y].apply(lambda x: x[::-1])
+        print(f"Selected {len(dataset)} forward reads")
 
     X = dataset[column_x].to_numpy().tolist()
     y = dataset[column_y].to_numpy()

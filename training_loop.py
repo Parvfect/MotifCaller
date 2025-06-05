@@ -14,7 +14,7 @@ import torch.nn as nn
 from torch.nn import CTCLoss
 import torch.optim as optim
 from sklearn.model_selection import train_test_split
-from utils import get_actual_transcript, get_savepaths
+from utils import get_actual_transcript, get_savepaths, load_model
 from transcript_sorting import sort_transcript, sort_transcript_reduced_spacers
 from evaluation import evaluate_cycle_prediction
 import numpy as np
@@ -257,7 +257,8 @@ def main(
         window_size: int = 1024, window_step: int = 800,
         running_on_hpc: bool = False, windows: bool = True,
         dataset_path: str = None, hidden_size: int = 1024, n_layers: int = 3,
-        dataset: str = "", normalize_flag: bool = False, lr:int = 0.001, batch_size:int = 1):
+        dataset: str = "", normalize_flag: bool = False, lr:int = 0.001, batch_size:int = 1,
+        saved_model: bool = False, saved_model_path: str = None):
 
     if dataset_path:
         _, model_save_path, file_write_path = get_savepaths(
@@ -268,8 +269,8 @@ def main(
             running_on_hpc=running_on_hpc)
     
     X, y = load_training_data(
-        dataset_path=dataset_path, column_x='squiggle', column_y='edit_spacer_seq',
-        sampling_rate=sampling_rate, orientation=True)
+        dataset_path=dataset_path, column_x='squiggle', column_y='motif_seq',
+        sampling_rate=sampling_rate, orientation=False)
 
     if windows:
         X = data_preproc(
@@ -284,18 +285,18 @@ def main(
 
     output_size = n_classes
     dropout_rate = 0.2
-    saved_model = False
     model_save_epochs = 1
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.set_default_device(device)
     print(f"Running on {device}")
 
-    """
-    model = MotifCaller(
-        n_classes=n_classes, hidden_size=hidden_size, n_layers=n_layers).to(device)
-    """
-    model = NaiveCaller(num_classes=n_classes, hidden_dim=hidden_size).to(device)
+    if saved_model:
+        model = load_model(
+            model_path=saved_model_path, device=device, n_classes=n_classes, hidden_size=hidden_size)
+        print("\nLoaded saved model\n")
+    else:
+        model = NaiveCaller(num_classes=n_classes, hidden_dim=hidden_size).to(device)
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
