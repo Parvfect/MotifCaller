@@ -58,12 +58,3 @@ if __name__ == '__main__':
     else:
         print("No fast5 path provided!")
         exit()
-
-
-
-#PBS -l select=1:ncpus=1:mem=100gb:ngpus=1:gpu_type=RTX6000
-#PBS -l walltime=40:00:00
-#PBS -N gpu_emp
-
-module load anaconda3/personal
-source activate base
