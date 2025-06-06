@@ -26,6 +26,8 @@ def load_training_data(
     forward_dataset = pd.read_pickle(forward_dataset_path)
     reverse_dataset = pd.read_pickle(reverse_dataset_path)
 
+    reverse_dataset[column_y] = reverse_dataset[column_y].apply(lambda x: x[::-1])
+
     dataset = pd.concat([forward_dataset, reverse_dataset])
 
     #dataset = pd.read_pickle(dataset_path)
