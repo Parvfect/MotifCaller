@@ -74,8 +74,9 @@ def beam_search_ctc(prob_matrix, beam_width=3, blank=0, n_classes=17, return_ali
 
 def torch_ctc(n_classes, model_output, beam_width=5, metrics=False):
 
-    labels = ["|"] + ["-"] + [str(i) for i in range(n_classes)]
-    decoder = ctc_decoder(lexicon=None, tokens=labels, beam_size=beam_width)
+    # labels = ["|"] + ["-"] + [str(i) for i in range(n_classes)]
+    labels = ["-"] + [str(i) for i in range(1, n_classes)]
+    decoder = ctc_decoder(lexicon=None, tokens=labels, beam_size=beam_width, sil_token='-')
     output = decoder(model_output)
     tokens = output[0][0].tokens.tolist()
 

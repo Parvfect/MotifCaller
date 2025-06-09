@@ -13,4 +13,5 @@ wandb_api_key.txt
 *.csv
 *.json
 **/results
-**/prod
+master_db.txt
+**/wget-log

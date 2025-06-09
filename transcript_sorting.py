@@ -41,6 +41,43 @@ def sort_transcript(transcript):
     return [list(set(i)) for i in cycles]
 
 
+def sort_transcript_with_address(transcript):
+
+    cycles = [[] for i in range(10)]
+    
+    if type(transcript) == str:
+        transcript = transcript.split()
+    
+    split_transcript = [int(i) for i in transcript if i != '']
+    
+    for i in range(len(split_transcript)):
+
+        found_motif = split_transcript[i]
+
+        # If we have a payload motif
+        if found_motif < 9:
+
+            # finding the spacers - only for payload cycles
+            if i > 0:
+                # Checking for Back Spacer
+                if split_transcript[i-1] > 8:
+                    cycle_number = split_transcript[i-1] - 9
+                    cycles[cycle_number].append(split_transcript[i])
+
+                # Checking for Forward Spacer
+                elif i < len(split_transcript) - 1:
+                    if split_transcript[i+1] > 8:
+                        cycle_number = split_transcript[i+1] - 9
+                        cycles[cycle_number].append(split_transcript[i])
+
+            else:
+                if i < len(split_transcript) - 1:
+                    # Checking for Forward Spacer
+                    if split_transcript[i+1] > 8:
+                        cycle_number = split_transcript[i+1] - 9
+                        cycles[cycle_number].append(split_transcript[i])   
+    return [list(set(i)) for i in cycles]
+
 def create_reduced_spacer_transcript(motif_seq: List[int]) -> List[int]:
     """ 12 4 12 12 3 12 -> 12 4 2 3 4 12 13 2 4 5 3 13"""
 
