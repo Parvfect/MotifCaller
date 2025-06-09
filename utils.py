@@ -169,6 +169,26 @@ def create_spacer_sequence(cycles):
 
     return spacer_sequence
 
+def create_spacer_sequence_with_address(cycles):
+
+    spacer_sequence = []
+
+    cycle_number = 9
+
+    """
+    if cycles.isinstance(str):
+        payload = eval(cycles)
+    """
+        
+    for i in cycles:
+        for j in i:
+            spacer_sequence.append(cycle_number)
+            spacer_sequence.append(j)
+            spacer_sequence.append(cycle_number)
+        cycle_number += 1
+
+    return spacer_sequence
+
 
 def gt_loss(
         ctc_loss, model_output_timestep, target_sequence, payload_sequence,
@@ -258,7 +278,7 @@ def get_bases_identified(target_seq, decoded_seq):
     return sum([i==j for i, j in zip(target_seq, decoded_seq)])/len(target_seq)
 
 
-def load_model(model_path, device, n_classes, hidden_size=128):
+def load_model(model_path, device, n_classes, hidden_size=256):
     """
     Loading model purely for inference
     Will need to lead optimizer to fine tune

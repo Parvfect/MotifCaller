@@ -25,6 +25,8 @@ parser.add_argument('--dataset', type=str)
 parser.add_argument('--normalize', action='store_true')
 parser.add_argument('--lr', type=float)
 parser.add_argument('--batch_size', type=int)
+parser.add_argument('--saved_model', action='store_true', help='Load from saved model')
+parser.add_argument('--saved_model_path', type=str, help="Saved model path")
 
 
 parser.set_defaults(
@@ -49,9 +51,12 @@ if __name__ == '__main__':
     normalize = args.normalize
     lr = args.lr
     batch_size = args.batch_size
+    saved_model = args.saved_model
+    saved_model_path = args.saved_model_path
 
     main(
     n_classes=n_classes, hidden_size=hidden_size, dataset=dataset,
     epochs=epochs, sampling_rate=sampling_rate, window_size=window_size,
     window_step=window_step, running_on_hpc=running_on_hpc, windows=windows,
-    dataset_path=dataset_path, normalize_flag=normalize, lr=lr, batch_size=batch_size)
+    dataset_path=dataset_path, normalize_flag=normalize, lr=lr, batch_size=batch_size,
+    saved_model=saved_model, saved_model_path=saved_model_path)

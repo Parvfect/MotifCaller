@@ -18,19 +18,7 @@ def load_training_data(
         dataset_path = os.path.join(
             os.environ['HOME'], "empirical_train_dataset_v5_payload_seq.pkl")
 
-    forward_path = 'datasets/motifcaller/empirical/edit_train_filtered_forward.pkl'
-    reverse_path = 'datasets/motifcaller/empirical/edit_train_filtered_reverse.pkl'
-    forward_dataset_path = os.path.join(os.environ["HOME"], forward_path)
-    reverse_dataset_path = os.path.join(os.environ['HOME'], reverse_path)
-
-    forward_dataset = pd.read_pickle(forward_dataset_path)
-    reverse_dataset = pd.read_pickle(reverse_dataset_path)
-
-    reverse_dataset[column_y] = reverse_dataset[column_y].apply(lambda x: x[::-1])
-
-    dataset = pd.concat([forward_dataset, reverse_dataset])
-
-    #dataset = pd.read_pickle(dataset_path)
+    dataset = pd.read_pickle(dataset_path)
 
     # Filtering out rc
     if orientation:
