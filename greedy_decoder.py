@@ -1,6 +1,7 @@
 
 import torch
 import torch.nn as nn
+import math
 
 
 class GreedyCTCDecoder(nn.Module):
@@ -34,3 +35,53 @@ class GreedyCTCDecoder(nn.Module):
         joined = " ".join([self.labels[i] for i in indices])
         return joined.replace("|", " ").strip().split()
     
+    def forward_with_quality__(self, emission):
+
+        probs = torch.exp(emission)
+        max_probs, indices = torch.max(probs, dim=-1)
+        prob_score = 0
+        counter = 0
+        payload_predictions = []
+        pointer = 0
+
+        for prob, ind in zip(max_probs, indices):
+            if ind > 0 and ind < 9:  # Payload motif
+                prob_score += prob
+                counter += 1
+                payload_predictions.append(
+                    probs[pointer])
+            pointer += 1
+
+        quality = -10 * math.log10(1 - prob_score/counter)
+                
+        #print(f"Average probability of payload motif {prob_score/counter}")
+        #print(f"Quality is {-10 * math.log10(1 - prob_score/counter):.2f}\n")
+
+        return self.forward(emission), quality
+    
+    def forward_with_quality(self, emission):
+        probs = torch.exp(emission)
+        max_probs, indices = torch.max(probs, dim=-1)
+
+        # Mask for payload motif indices (1 to 8)
+        mask = (indices > 0) & (indices < 9)
+
+        # Select relevant probabilities
+        selected_probs = max_probs[mask]
+
+        # Compute quality only if we have selected any
+        if selected_probs.numel() > 0:
+            prob_score = selected_probs.sum()
+            counter = selected_probs.numel()
+            quality = -10 * math.log10(1 - (prob_score / counter).item())
+        else:
+            quality = 0  # or some defined fallback value
+
+        # Optional: get full payload predictions if still needed
+        # payload_predictions = probs[mask]  # optional, only if needed
+
+        indices = torch.unique_consecutive(indices, dim=-1)
+        indices = [i for i in indices if i != self.blank]
+        joined = " ".join([self.labels[i] for i in indices])
+        return joined.replace("|", " ").strip().split(), quality
+
