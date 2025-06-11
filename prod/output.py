@@ -7,7 +7,7 @@ import uuid
 
 
 def save_inference_to_csv(
-        sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr, savepath, fast5_filepath):
+        sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr, qualities, savepath, fast5_filepath):
     # payload predictions, motifs found, read_ids
 
     motifs_identified = [
@@ -15,7 +15,7 @@ def save_inference_to_csv(
     
     df = pd.DataFrame(
         {'read_id': read_ids_arr, 'payload_prediction': sorted_greedy_transcripts,
-        'library_motif': motifs_identified, 'raw_transcript': greedy_transcripts_arr})
+        'library_motif': motifs_identified, 'raw_transcript': greedy_transcripts_arr, "quality": qualities})
 
     fast5_file = os.path.basename(fast5_filepath)[:-6]
     uid = str(uuid.uuid4())

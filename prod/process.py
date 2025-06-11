@@ -33,15 +33,15 @@ if __name__ == '__main__':
         print("Initialising model and reading data\n")
         squiggles, read_ids, forward_model, reverse_model, device, greedy_decoder = model_init(fast5_path=fast5_path)
         print("Starting inference\n")
-        sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr = model_inference(
+        sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr, qualities = model_inference(
             data_arr=squiggles, read_ids=read_ids, forward_model=forward_model, reverse_model=reverse_model, device=device, greedy_decoder=greedy_decoder
         )
         print("Saving results\n")
-        save_inference_to_csv(sorted_greedy_transcripts=sorted_greedy_transcripts, greedy_transcripts_arr=greedy_transcripts_arr, read_ids_arr=read_ids_arr, savepath=savepath, fast5_filepath=fast5_path)
+        save_inference_to_csv(sorted_greedy_transcripts=sorted_greedy_transcripts, greedy_transcripts_arr=greedy_transcripts_arr, read_ids_arr=read_ids_arr, qualities=qualities, savepath=savepath, fast5_filepath=fast5_path)
 
     elif fast5_directory:
-        for file in os.listdir(fast5_directory):
 
+        for file in os.listdir(fast5_directory):
             if file.endswith('fast5'):
                 print(f"Loading data from {file}\n")
 
@@ -49,11 +49,11 @@ if __name__ == '__main__':
                 squiggles, read_ids, forward_model, reverse_model, device, greedy_decoder = model_init(fast5_path=os.path.join(fast5_directory, file))
 
                 print("Starting inference\n")
-                sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr = model_inference(
+                sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr, qualities = model_inference(
                     data_arr=squiggles, read_ids=read_ids, forward_model=forward_model, reverse_model=reverse_model, device=device, greedy_decoder=greedy_decoder
                 )
                 print("Saving results\n")
-                save_inference_to_csv(sorted_greedy_transcripts=sorted_greedy_transcripts, greedy_transcripts_arr=greedy_transcripts_arr, read_ids_arr=read_ids_arr, savepath=savepath, fast5_filepath=file)
+                save_inference_to_csv(sorted_greedy_transcripts=sorted_greedy_transcripts, greedy_transcripts_arr=greedy_transcripts_arr, read_ids_arr=read_ids_arr, qualities=qualities, savepath=savepath, fast5_filepath=file)
 
     else:
         print("No fast5 path provided!")

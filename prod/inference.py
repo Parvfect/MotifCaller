@@ -28,7 +28,7 @@ def load_model(model_path, device):
 def model_init(fast5_path: str):
 
     squiggles, read_ids = extract_fast5_data_from_file(fast5_filepath=fast5_path)
-    forward_model_path = 'forward_model.pth'
+    forward_model_path = 'forward.pth'
     reverse_model_path = 'mixed_256.pth'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     #device = torch.device('cpu')
@@ -50,6 +50,7 @@ def model_inference(
     greedy_transcripts_arr = []
     sorted_greedy_transcripts = []
     read_ids_arr = []
+    qualities = []
 
     n_training_samples = len(data_arr)
 
@@ -76,34 +77,37 @@ def model_inference(
             input_seqs = input_seqs.view(input_seqs.shape[0], 1, input_seqs.shape[1])
             input_seqs = input_seqs.to(device)
 
-            #try:
-            forward_model_output = forward_model(input_seqs)
-            #reverse_model_output = reverse_model(input_seqs)
-            
-            for k in range(batch_size):
-                greedy_result_forward = greedy_decoder(
-                    forward_model_output[k])
-                #greedy_result_reverse = greedy_decoder(
-                #    reverse_model_output[k]
-                #)
+            try:
+                forward_model_output = forward_model(input_seqs)
+                reverse_model_output = reverse_model(input_seqs)
+                
+                for k in range(batch_size):
 
-                #if detect_reverse_oriented_read(greedy_result_reverse):
-                #    greedy_transcript = " ".join(greedy_result_reverse)
-                #else:
-                greedy_transcript = " ".join(greedy_result_forward)
+                    greedy_result_reverse, quality = greedy_decoder(
+                        reverse_model_output[k]
+                    )
 
-                sorted_greedy = sort_transcript(greedy_transcript)
-                greedy_transcripts_arr.append(greedy_transcript)
-                sorted_greedy_transcripts.append(sorted_greedy)
+                    if detect_reverse_oriented_read(greedy_result_reverse):
+                        greedy_transcript = " ".join(greedy_result_reverse)
+                    else:
+                        greedy_result_forward, quality = greedy_decoder(
+                        forward_model_output[k])
+                        greedy_transcript = " ".join(greedy_result_forward)
 
-            torch.cuda.empty_cache()
-            if device == torch.device('cuda'):
-                del input_seqs
-            
-            read_ids_arr.extend(read_ids[ind: ind + batch_size])
+                    sorted_greedy = sort_transcript(greedy_transcript)
 
-            #except Exception as e:
-            #    print(f"Ignoring error {e} and continuing inference")
-            #    continue
+                    greedy_transcripts_arr.append(greedy_transcript)
+                    sorted_greedy_transcripts.append(sorted_greedy)
+                    qualities.append(quality)
 
-    return sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr
+                torch.cuda.empty_cache()
+                if device == torch.device('cuda'):
+                    del input_seqs
+                
+                read_ids_arr.extend(read_ids[ind: ind + batch_size])
+
+            except Exception as e:
+                print(f"Ignoring error {e} and continuing inference")
+                continue
+
+    return sorted_greedy_transcripts, greedy_transcripts_arr, read_ids_arr, qualities

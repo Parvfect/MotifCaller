@@ -1,8 +1,8 @@
 
-#from torchaudio.models.decoder import ctc_decoder
 import torch
 import torch.nn as nn
 import numpy as np
+import math
 
 
 class GreedyCTCDecoder(nn.Module):
@@ -12,43 +12,26 @@ class GreedyCTCDecoder(nn.Module):
         labels_int = np.arange(n_classes).tolist()
         self.labels = [f"{i}" for i in labels_int]
         self.blank = 0
+    
+    def forward(self, emission):
+        probs = torch.exp(emission)
+        max_probs, indices = torch.max(probs, dim=-1)
 
-    def forward(self, emission:torch.Tensor):
-        """Given a sequence emission over labels, get the best path"""
+        # Mask for payload motif indices (1 to 8)
+        mask = (indices > 0) & (indices < 9)
 
-        indices = torch.argmax(emission, dim=-1)
+        # Select relevant probabilities
+        selected_probs = max_probs[mask]
+
+        # Compute quality only if we have selected any
+        if selected_probs.numel() > 0:
+            prob_score = selected_probs.sum()
+            counter = selected_probs.numel()
+            quality = -10 * math.log10(1 - (prob_score / counter).item())
+        else:
+            quality = 0  # or some defined fallback value
+
         indices = torch.unique_consecutive(indices, dim=-1)
         indices = [i for i in indices if i != self.blank]
         joined = " ".join([self.labels[i] for i in indices])
-        return joined.replace("|", " ").strip().split()
-    
-
-    def forward_2(self, emission, prob_threshold):
-        probs = torch.exp(emission)  # shape: (T, C)
-        max_probs, indices = torch.max(probs, dim=-1)  # get max prob and corresponding index at each timestep
-
-        # Apply probability threshold
-        indices = torch.where(max_probs >= prob_threshold, indices, torch.tensor(self.blank))
-
-        # Collapse repeated tokens and remove blanks
-        indices = torch.unique_consecutive(indices, dim=-1)
-        indices = [i for i in indices if i != self.blank]
-
-        # Convert to label string
-        joined = " ".join([self.labels[i] for i in indices])
-        return joined.replace("|", " ").strip().split()
-
-
-""" Ignoring beam decoder for now
-def torch_ctc(n_classes, model_output, beam_width=5, metrics=False):
-
-    labels = ["|"] + ["-"] + [str(i) for i in range(n_classes)]
-    decoder = ctc_decoder(lexicon=None, tokens=labels, beam_size=beam_width)
-    output = decoder(model_output)
-    tokens = output[0][0].tokens.tolist()
-
-    if not metrics:
-        return [i for i in tokens if i > 0]
-    
-    return output
-"""
+        return joined.replace("|", " ").strip().split(), quality
