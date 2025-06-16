@@ -27,11 +27,17 @@ class GreedyCTCDecoder(nn.Module):
         if selected_probs.numel() > 0:
             prob_score = selected_probs.sum()
             counter = selected_probs.numel()
-            quality = -10 * math.log10(1 - (prob_score / counter).item())
+            quality = -10 * math.log10(
+                1 - (prob_score / counter).item())
+            individual_qualities = -10 * torch.log10(1 - selected_probs)
         else:
             quality = 0  # or some defined fallback value
 
         indices = torch.unique_consecutive(indices, dim=-1)
         indices = [i for i in indices if i != self.blank]
         joined = " ".join([self.labels[i] for i in indices])
-        return joined.replace("|", " ").strip().split(), quality
+
+        greedy_transcript = joined.replace(
+            "|", " ").strip().split()
+
+        return greedy_transcript, quality, individual_qualities
